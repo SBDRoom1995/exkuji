@@ -22,7 +22,8 @@ img{max-width:100%}
 html,body{overscroll-behavior-y:none}
 </style>
 <script>window.EX_APP=true;</script>
-<script>window.EX_SHARED=true;</script>
+<meta name="exkuji-build" content="10/16 17:56">
+<script>window.EX_SHARED=true;window.EX_BUILD="版 10/16 17:56";</script>
 </head>
 
 <body>
@@ -778,7 +779,7 @@ const Sync=(()=>{
     if(tag)mark(tag)}
   // 画面の更新（入力中・演出中は待つ）
   function busy(){const a=document.activeElement;return !!($('#modalRoot').innerHTML||document.querySelector('.fx')||Draw.on||(a&&a.closest&&a.closest('#app')&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)))}
-  function changed(){if(S.state!=='ready')return;clearTimeout(renderT);renderT=setTimeout(flush,150)}
+  function changed(){if(S.state!=='ready')return;if(S.isAdmin&&db.gachas.length&&ADD_GACHAS.some(d=>!(db.added||[]).includes(d.id))&&'config/main' in base){if(addPresetGachas()){syncAllGifts();push()}else push()}clearTimeout(renderT);renderT=setTimeout(flush,150)}
   function flush(){if(busy()){renderHeader();clearTimeout(renderWait);renderWait=setTimeout(flush,900);return}keepScroll(render)}
   // 読み込み
   const NEED=['admins','gachas','main','me','winners','subs','requests'];
@@ -1721,7 +1722,7 @@ function render(){
   if(!G(gsel)||!live().includes(G(gsel)))gsel=(live()[0]||{}).id;
   app.innerHTML=({gacha:viewGacha,tickets:viewTickets,prizes:viewPrizes,admin:viewAdmin}[tab])(u)+footerHTML();
 }
-function footerHTML(){return `<footer class="foot">${SHARED&&cur()?'<a href="#" data-act="logout">ログアウト</a>':''}<a href="#" data-act="policy">プライバシーポリシー</a><a href="#" data-act="terms">利用規約</a><a href="#" data-act="terms">特定商取引法に基づく表記</a><span>© 株式会社EXCEED</span></footer>`}
+function footerHTML(){return `<footer class="foot">${SHARED&&cur()?'<a href="#" data-act="logout">ログアウト</a>':''}<a href="#" data-act="policy">プライバシーポリシー</a><a href="#" data-act="terms">利用規約</a><a href="#" data-act="terms">特定商取引法に基づく表記</a><span>© 株式会社EXCEED</span><span class="small muted">${window.EX_BUILD||''}</span></footer>`}
 function openPolicy(){
   const T=(h,rows)=>`<div class="tablewrap"><table class="odds"><thead><tr>${h.map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(x=>`<td>${x}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
   openModal(`<div class="policy"><h3>プライバシーポリシー</h3>

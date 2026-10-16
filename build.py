@@ -5,7 +5,9 @@ head=(R/'src/head.html').read_text()
 body=(R/'src/exkuji.html').read_text()
 cfg=json.loads((R/'src/firebase-config.json').read_text())
 cfg={k:cfg[k] for k in ['apiKey','authDomain','projectId','storageBucket','messagingSenderId','appId']}
-pre='<script>window.EX_SHARED=true;</script>\n'
+import datetime
+ver=(datetime.datetime.utcnow()+datetime.timedelta(hours=9)).strftime('%m/%d %H:%M')
+pre='<meta name="exkuji-build" content="'+ver+'">\n<script>window.EX_SHARED=true;window.EX_BUILD="版 '+ver+'";</script>\n'
 fb='''<script type="module">
 // Firebase（ログインと共有データ）に接続する
 (async()=>{
