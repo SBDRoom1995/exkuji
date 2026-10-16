@@ -680,13 +680,15 @@ const Sync=(()=>{
   const S={state:'boot',email:null,admins:[],isAdmin:false,err:'',mode:'signup',pending:null,adminSeen:false};
   const base={},ver={},inflight={},held={},ordOf={},got=new Set();
   let unsubs=[],scopeUnsubs=[],renderT=null,renderWait=null;
-  const J=JSON.stringify,clone=x=>x==null?x:JSON.parse(J(x));
+  // 項目の並び順に左右されない比較（データベースは項目をABC順で返すため）
+  const canon=x=>Array.isArray(x)?x.map(canon):x&&typeof x==='object'?Object.keys(x).sort().reduce((o,k)=>(o[k]=canon(x[k]),o),{}):x;
+  const J=x=>JSON.stringify(canon(x)),clone=x=>x==null?x:JSON.parse(JSON.stringify(x));
   const noV=d=>{if(!d)return d;const c={...d};delete c._v;return c};
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   // 自動で作る景品画像は保存しない（各端末で作り直す）
   function stripG(g){g=clone(g);const s=p=>{if(p&&p.img&&(p.autoImg||GIFT_PRESET.has(p.img)))delete p.img};
     (g.prizes||[]).forEach(s);s(g.last);s(g.kiri);if(g.next){(g.next.prizes||[]).forEach(s);s(g.next.last)}return g}
-  function rehydrate(g){const s=(p,rk)=>{if(!p||p.img)return;if(p.autoImg)p.autoImg=false;syncGift(p,rk)};
+  function rehydrate(g){if(S.isAdmin&&g.next&&g.next.prizes)g.next.prizes.forEach(p=>{if(!p.id)p.id='N'+uid()});const s=(p,rk)=>{if(!p||p.img)return;if(p.autoImg)p.autoImg=false;syncGift(p,rk)};
     (g.prizes||[]).forEach(p=>s(p,p.id));s(g.last,'L');if(g.kiri&&g.kiri.every)s(g.kiri,'K');
     if(g.next){(g.next.prizes||[]).forEach((p,i)=>s(p,String.fromCharCode(65+i)));s(g.next.last,'L')}}
   const ARR=['subs','requests','winners','answers'];
@@ -714,11 +716,11 @@ const Sync=(()=>{
   const keyOf=x=>x&&typeof x==='object'?(x.uid??x.id??null):null;
   function mergeArr(sv,b,l){
     if(l.concat(sv,b).every(x=>keyOf(x)!=null)){
-      const bm=new Map(b.map(x=>[keyOf(x),J(x)])),lk=new Set(l.map(keyOf)),out=[],seen=new Set();
-      for(const x of l){const k=keyOf(x);if(!bm.has(k)&&!seen.has(k)){out.push(x);seen.add(k)}}
-      const lm=new Map(l.map(x=>[keyOf(x),x]));
-      for(const x of sv){const k=keyOf(x);if(seen.has(k))continue;if(bm.has(k)&&!lk.has(k))continue;
-        const lx=lm.get(k);out.push(lx&&J(lx)!==bm.get(k)?lx:x);seen.add(k)}
+      // 並び順は自分の端末の順番を守る。サーバーで新しく増えたものは先頭に
+      const bm=new Map(b.map(x=>[keyOf(x),J(x)])),sm=new Map(sv.map(x=>[keyOf(x),x])),lk=new Set(l.map(keyOf)),out=[],seen=new Set();
+      for(const x of sv){const k=keyOf(x);if(!bm.has(k)&&!lk.has(k)&&!seen.has(k)){out.push(x);seen.add(k)}}
+      for(const x of l){const k=keyOf(x);if(seen.has(k))continue;seen.add(k);
+        if(!bm.has(k)||J(x)!==bm.get(k))out.push(x);else if(sm.has(k))out.push(sm.get(k))}
       return out}
     const bs=new Set(b.map(x=>J(x)));const nl=l.filter(x=>!bs.has(J(x)));
     return [...nl,...sv].slice(0,Math.max(l.length,sv.length))}
@@ -1488,7 +1490,7 @@ function savePrizeEdit(f){
   if(isNew&&draftOf(g).prizes.length>=MAX_PRIZES)e.push(`景品は${MAX_PRIZES}種類まで`);
   if(e.length){$('#peErr').textContent=e.join('・')+' を確認してください。';return}
   let p;
-  if(isNew){p={name,count,pt};draftOf(g).prizes.push(p)}else p=prizeAt(g,mode,key);
+  if(isNew){p={id:'N'+uid(),name,count,pt};draftOf(g).prizes.push(p)}else p=prizeAt(g,mode,key);
   const old={...p};
   p.name=name;p.pt=pt;p.digital=$('#pe-dig').checked;p.cost=Math.max(0,parseInt($('#pe-cost').value,10)||0);
   if(!isL&&mode!=='live')p.count=count;
