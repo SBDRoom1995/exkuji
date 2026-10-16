@@ -1580,6 +1580,7 @@ function adminGachaCard(){
         ${ag.status==='live'?`<button class="btn small ghost" data-act="gPause" data-g="${ag.id}">公開を一時停止</button>`:''}
         ${ag.status==='paused'?`<button class="btn small" data-act="gPause" data-g="${ag.id}">公開を再開</button>`:''}
         ${ag.status==='ended'?`<button class="btn small" data-act="gRevive" data-g="${ag.id}">もう一度公開する</button>`:''}
+        <span class="spacer"></span><button class="btn small ghost" style="color:var(--danger);border-color:var(--danger)" data-act="gDel" data-g="${ag.id}">このガチャを削除</button>
       </div>`;
   }else{
     const n=draftOf(ag);
@@ -1643,6 +1644,10 @@ function adminActs(el){
     applyNowAsk:()=>confirmBox('今すぐ反映しますか？',`いまのBOX #${g.no}（残り${gLeft(g).toLocaleString()}個）を終わらせて、新しい内容でBOX #${g.no+1}を始めます。ラストワン賞は出ません。`,'applyNow','今すぐ反映',true,`data-g="${g.id}"`),
     applyNow:()=>{if(g.status==='draft'&&!draftOf(g).prizes.length)return;applyNext(g);adminMode='live';closeModal();save();render();toast(`${g.name}を公開しました`)},
     draftDel:()=>confirmBox(`${esc(g.name)}を削除しますか？`,'まだ公開していないガチャなので、そのまま削除します。','draftDelOk','削除する',true,`data-g="${g.id}"`),
+    gDel:()=>{if(db.gachas.length<=1){toast('ガチャが1つだけのときは削除できません');return}
+      const held=Object.values(db.users).reduce((n,u)=>n+(u.prizes||[]).filter(p=>p.gid===g.id&&p.status==='held').length,0);
+      confirmBox(`${esc(g.name)}を削除しますか？`,`削除すると、このガチャは誰の画面からも消えて、元に戻せません。${held?`<br><b>まだ受け取り申請していない景品が ${held}個</b> あります。削除すると、その景品は名前が分からなくなります。残したい場合は「公開を一時停止」にしてください。`:''}`,'gDelOk','削除する',true,`data-g="${g.id}"`)},
+    gDelOk:()=>{db.gachas=db.gachas.filter(x=>x.id!==g.id);if(gsel===g.id)gsel=(db.gachas[0]||{}).id;adminG=db.gachas[0].id;adminMode='live';closeModal();save();render();toast(g.name+'を削除しました')},
     draftDelOk:()=>{db.gachas=db.gachas.filter(x=>x.id!==g.id);adminG=db.gachas[0].id;adminMode='live';closeModal();save();render();toast('削除しました')}
   };
 }
