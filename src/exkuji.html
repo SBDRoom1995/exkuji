@@ -566,6 +566,17 @@ const DEFAULT_GACHAS=[
    prizes:[['ロボット掃除機',1,50000,0],['ワイヤレスイヤホン',3,10000,0],['モバイルバッテリー',30,3000,0],['デジタルギフト 100円分',600,110,1],['デジタルギフト 20円分',4366,22,1]],
    last:['ワイヤレス充電器',3000,0]}
 ];
+// あとから追加したガチャ。管理者が開いたときに1回だけ追加される（削除したら戻らない）
+// 仕入れ値は2026年10月のApple直販価格＋送料の目安
+const ADD_GACHAS=[
+  {id:'apple',name:'Apple製品ガチャ',tone:'green',cost:5,desc:'iPhone・AirPodsが当たる',
+   prizes:[['iPhone 17',1,143800,0],['AirPods 4',5,24800,0],['Apple Gift Card 3,000円分',50,3050,1],['デジタルギフト 300円分',444,310,1],['デジタルギフト 50円分',4500,55,1]],
+   last:['iPhone 18 Pro',220800,0],kiri:{every:500,name:'Apple Gift Card 1,000円分',cost:1020,pt:50,digital:true}}
+];
+function addPresetGachas(){db.added=db.added||[];let n=0;
+  for(const d of ADD_GACHAS){if(db.added.includes(d.id))continue;db.added.push(d.id);
+    if(!G(d.id)){const g=buildGacha({...d,filled:null});if(d.kiri)g.kiri={...d.kiri};db.gachas.push(g);n++}}
+  return n}
 const PT_PER_TICKET=10;
 const PACKS=[{n:10,bonus:0,yen:1000},{n:30,bonus:3,yen:3000},{n:50,bonus:10,yen:5000}];
 const AD_LIMIT=5;
@@ -667,7 +678,7 @@ const Sync=(()=>{
   function unitOf(k){const i=k.indexOf('/'),c=k.slice(0,i),id=k.slice(i+1);
     if(c==='users')return db.users[id]&&(id===S.email||S.isAdmin)?db.users[id]:null;
     if(c==='gachas'){const n=db.gachas.findIndex(g=>g.id===id);return n<0?null:{...stripG(db.gachas[n]),ord:n}}
-    if(k==='config/main')return {settings:db.settings||null,cases:db.cases||[],lastRoll:db.lastRoll||null,rollLog:db.rollLog||[]};
+    if(k==='config/main')return {settings:db.settings||null,cases:db.cases||[],lastRoll:db.lastRoll||null,rollLog:db.rollLog||[],added:db.added||[]};
     if(ARR.includes(c))return (db[c]||[]).find(x=>x.id===id)||null;
     return null}
   function keys(){const ks=[];for(const e in db.users)if(e===S.email||S.isAdmin)ks.push('users/'+e);
@@ -678,7 +689,7 @@ const Sync=(()=>{
     if(c==='users'){db.users[id]=d;return}
     if(c==='gachas'){ordOf[id]=d.ord??99;delete d.ord;rehydrate(d);const n=db.gachas.findIndex(g=>g.id===id);if(n>=0)db.gachas[n]=d;else db.gachas.push(d);
       db.gachas.sort((a,b)=>(ordOf[a.id]??99)-(ordOf[b.id]??99));return}
-    if(k==='config/main'){if(d.settings)db.settings=d.settings;db.cases=d.cases||[];db.lastRoll=d.lastRoll||null;db.rollLog=d.rollLog||[];return}
+    if(k==='config/main'){if(d.settings)db.settings=d.settings;db.cases=d.cases||[];db.lastRoll=d.lastRoll||null;db.rollLog=d.rollLog||[];db.added=d.added||[];return}
     if(ARR.includes(c)){const a=db[c]||(db[c]=[]);const n=a.findIndex(x=>x.id===id);if(n>=0)a[n]=d;else a.push(d);a.sort((x,y)=>(y.at||0)-(x.at||0))}}
   function removeUnit(k){const i=k.indexOf('/'),c=k.slice(0,i),id=k.slice(i+1);
     if(c==='users')delete db.users[id];else if(c==='gachas')db.gachas=db.gachas.filter(g=>g.id!==id);
@@ -769,7 +780,8 @@ const Sync=(()=>{
     // 最初の管理者が、ガチャの初期データを用意する
     if(S.isAdmin&&!db.gachas.length&&!('config/main' in base)){
       db.gachas=DEFAULT_GACHAS.map(d=>buildGacha({...d,filled:null}));db.cases=null;migrateCases();
-      db.settings={shipPt:80,freePt:300,target:50};db.lastRoll=monthKey(now());db.rollLog=[];syncAllGifts()}
+      db.settings={shipPt:80,freePt:300,target:50};db.lastRoll=monthKey(now());db.rollLog=[];db.added=[]}
+    if(S.isAdmin&&db.gachas.length){addPresetGachas();syncAllGifts()}
     let u=db.users[S.email],isNew=false;
     if(!u){const p=S.pending||{};isNew=true;
       u=db.users[S.email]=makeUser(p.name||S.email.split('@')[0],S.email,now());addTickets(u,3,'新規登録ボーナス');
@@ -2073,6 +2085,7 @@ if(SHARED)Sync.boot();else{
 db=load();
 migrateCases();
 db.gachas.forEach(g=>{if(!g.kiri)g.kiri=kiriFor(g.id)});
+addPresetGachas();
 syncAllGifts();save();
 // 文字のフォントが読み込めたら、自動で作った画像を描き直す
 }
