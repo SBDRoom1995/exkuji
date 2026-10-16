@@ -22,7 +22,9 @@ img{max-width:100%}
 html,body{overscroll-behavior-y:none}
 </style>
 <script>window.EX_APP=true;</script>
+<script>window.EX_SHARED=true;</script>
 </head>
+
 <body>
 <title>EXくじ デモ</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -488,6 +490,15 @@ nav.tabs button[aria-current="page"] svg{color:#fff;filter:drop-shadow(0 0 6px r
 header.top .wrap{gap:8px}
 .logo,.rankchip,.bal,.bal button{white-space:nowrap;flex-shrink:0}
 @media (max-width:440px){.logo{font-size:17px}.rankchip{font-size:11px;padding:3px 7px}header.top .wrap{gap:6px}}
+
+.seg{display:flex;gap:4px;padding:4px;border-radius:12px;background:var(--surface-2,rgba(255,255,255,.06))}
+.seg button{flex:1;border:0;border-radius:9px;padding:9px;background:transparent;color:inherit;font:inherit;font-weight:700;cursor:pointer}
+.seg button[aria-selected="true"]{background:var(--blue,#3D8BFF);color:#fff}
+.linkbtn{background:none;border:0;color:var(--blue,#3D8BFF);text-decoration:underline;cursor:pointer;padding:4px 0;align-self:flex-start;font:inherit}
+.card.loading{display:flex;flex-direction:column;align-items:center;gap:10px;padding:40px 16px}
+.spin{width:34px;height:34px;border-radius:50%;border:3px solid rgba(255,255,255,.15);border-top-color:var(--gold,#FFD25A);animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#machine.wait{opacity:.85}
 </style>
 
 <header class="top" id="hdr" hidden>
@@ -528,7 +539,9 @@ const isGiftName=n=>/(ギフト|カード|プリペイド|PayPay|マネー|商�
 const GIFT_STYLE={A:['#2B2210','#F7D774','#C9962B','#8E6513','#2B1D00','#FFF3C4'],B:['#3A1424','#FF8FB5','#E0457B','#A3234F','#FFFFFF','#FFD6E5'],
   C:['#1E1640','#A996FF','#7B5CE0','#4B2FA3','#FFFFFF','#E3DCFF'],D:['#0D2B1F','#5EE0A4','#16A061','#0B6A3F','#FFFFFF','#CFF6E2'],
   E:['#0B2236','#7CC8FF','#1E8FD6','#11598A','#FFFFFF','#D4EEFF'],L:['#0A0A0A','#2A2A2A','#0F0F0F','#000000','#F7D774','#F7D774'],K:['#2E1A05','#FFC266','#F08C00','#A65404','#2B1400','#FFE2B8']};
-function genGift(name,rank){
+const GEN_CACHE={};
+function genGift(name,rank){const ck=name+'|'+rank;if(GEN_CACHE[ck])return GEN_CACHE[ck];const im=genGift0(name,rank);if(im)GEN_CACHE[ck]=im;return im}
+function genGift0(name,rank){
   try{
     const n=giftKey(name).replace(/[０-９]/g,d=>String.fromCharCode(d.charCodeAt(0)-65248));
     const m=n.match(/([0-9]+)円/);const amt=m?'¥'+(+m[1]).toLocaleString():'';
@@ -660,7 +673,191 @@ const MISSIONS=[
 const KEY='exkuji-demo-v11';
 let mem=null, db, tab='gacha', gsel='gift', adminG='gift';
 function load(){try{const s=localStorage.getItem(KEY);if(s)return JSON.parse(s)}catch(e){}return mem||fresh()}
-function save(){mem=db;try{localStorage.setItem(KEY,JSON.stringify(db));return true}catch(e){return false}}
+function save(){mem=db;if(SHARED){Sync.push();return true}try{localStorage.setItem(KEY,JSON.stringify(db));return true}catch(e){return false}}
+/* ---------- みんなで共有（Firebase）。アプリ版だけで使う ---------- */
+const SHARED=!!window.EX_SHARED;
+const Sync=(()=>{
+  const S={state:'boot',email:null,admins:[],isAdmin:false,err:'',mode:'signup',pending:null,adminSeen:false};
+  const base={},ver={},inflight={},held={},ordOf={},got=new Set();
+  let unsubs=[],scopeUnsubs=[],renderT=null,renderWait=null;
+  const J=JSON.stringify,clone=x=>x==null?x:JSON.parse(J(x));
+  const noV=d=>{if(!d)return d;const c={...d};delete c._v;return c};
+  const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+  // 自動で作る景品画像は保存しない（各端末で作り直す）
+  function stripG(g){g=clone(g);const s=p=>{if(p&&p.img&&(p.autoImg||GIFT_PRESET.has(p.img)))delete p.img};
+    (g.prizes||[]).forEach(s);s(g.last);s(g.kiri);if(g.next){(g.next.prizes||[]).forEach(s);s(g.next.last)}return g}
+  function rehydrate(g){const s=(p,rk)=>{if(!p||p.img)return;if(p.autoImg)p.autoImg=false;syncGift(p,rk)};
+    (g.prizes||[]).forEach(p=>s(p,p.id));s(g.last,'L');if(g.kiri&&g.kiri.every)s(g.kiri,'K');
+    if(g.next){(g.next.prizes||[]).forEach((p,i)=>s(p,String.fromCharCode(65+i)));s(g.next.last,'L')}}
+  const ARR=['subs','requests','winners','answers'];
+  function unitOf(k){const i=k.indexOf('/'),c=k.slice(0,i),id=k.slice(i+1);
+    if(c==='users')return db.users[id]&&(id===S.email||S.isAdmin)?db.users[id]:null;
+    if(c==='gachas'){const n=db.gachas.findIndex(g=>g.id===id);return n<0?null:{...stripG(db.gachas[n]),ord:n}}
+    if(k==='config/main')return {settings:db.settings||null,cases:db.cases||[],lastRoll:db.lastRoll||null,rollLog:db.rollLog||[]};
+    if(ARR.includes(c))return (db[c]||[]).find(x=>x.id===id)||null;
+    return null}
+  function keys(){const ks=[];for(const e in db.users)if(e===S.email||S.isAdmin)ks.push('users/'+e);
+    db.gachas.forEach(g=>ks.push('gachas/'+g.id));ks.push('config/main');
+    (db.answers||[]).forEach(a=>{if(!a.id)a.id=a.sid+'_'+a.at+'_'+uid()});
+    ARR.forEach(c=>(db[c]||[]).forEach(x=>ks.push(c+'/'+x.id)));return ks}
+  function applyUnit(k,d){const i=k.indexOf('/'),c=k.slice(0,i),id=k.slice(i+1);d=clone(d);
+    if(c==='users'){db.users[id]=d;return}
+    if(c==='gachas'){ordOf[id]=d.ord??99;delete d.ord;rehydrate(d);const n=db.gachas.findIndex(g=>g.id===id);if(n>=0)db.gachas[n]=d;else db.gachas.push(d);
+      db.gachas.sort((a,b)=>(ordOf[a.id]??99)-(ordOf[b.id]??99));return}
+    if(k==='config/main'){if(d.settings)db.settings=d.settings;db.cases=d.cases||[];db.lastRoll=d.lastRoll||null;db.rollLog=d.rollLog||[];return}
+    if(ARR.includes(c)){const a=db[c]||(db[c]=[]);const n=a.findIndex(x=>x.id===id);if(n>=0)a[n]=d;else a.push(d);a.sort((x,y)=>(y.at||0)-(x.at||0))}}
+  function removeUnit(k){const i=k.indexOf('/'),c=k.slice(0,i),id=k.slice(i+1);
+    if(c==='users')delete db.users[id];else if(c==='gachas')db.gachas=db.gachas.filter(g=>g.id!==id);
+    else if(ARR.includes(c))db[c]=(db[c]||[]).filter(x=>x.id!==id)}
+  // 3者マージ：自分が変えたところだけ自分の値。数は差分を足し、一覧は両方の追加分を残す
+  const isObj=x=>x&&typeof x==='object'&&!Array.isArray(x);
+  const keyOf=x=>x&&typeof x==='object'?(x.uid??x.id??null):null;
+  function mergeArr(sv,b,l){
+    if(l.concat(sv,b).every(x=>keyOf(x)!=null)){
+      const bm=new Map(b.map(x=>[keyOf(x),J(x)])),lk=new Set(l.map(keyOf)),out=[],seen=new Set();
+      for(const x of l){const k=keyOf(x);if(!bm.has(k)&&!seen.has(k)){out.push(x);seen.add(k)}}
+      const lm=new Map(l.map(x=>[keyOf(x),x]));
+      for(const x of sv){const k=keyOf(x);if(seen.has(k))continue;if(bm.has(k)&&!lk.has(k))continue;
+        const lx=lm.get(k);out.push(lx&&J(lx)!==bm.get(k)?lx:x);seen.add(k)}
+      return out}
+    const bs=new Set(b.map(x=>J(x)));const nl=l.filter(x=>!bs.has(J(x)));
+    return [...nl,...sv].slice(0,Math.max(l.length,sv.length))}
+  function mergeVal(sv,b,l){
+    if(J(l)===J(b))return sv;if(sv===undefined||J(sv)===J(b))return l;
+    if(typeof l==='number'&&typeof sv==='number'&&typeof b==='number')return sv+(l-b);
+    if(Array.isArray(l)&&Array.isArray(sv)&&Array.isArray(b))return mergeArr(sv,b,l);
+    if(isObj(l)&&isObj(sv)&&isObj(b))return mergeObj(sv,b,l);
+    return l}
+  function mergeObj(sv,b,l){const r={...sv};const ks=new Set([...Object.keys(l||{}),...Object.keys(b||{})]);
+    for(const f of ks){if(f==='_v')continue;const lv=l?l[f]:undefined,bv=b?b[f]:undefined;
+      if(J(lv)!==J(bv)){if(lv===undefined)delete r[f];else r[f]=mergeVal(sv[f],bv,lv)}}return r}
+  function merge3(sv,b,l){const r=mergeObj(sv,b||{},l);delete r._v;return r}
+  function fail(e){console.warn('[sync]',e);const m=e&&(e.code||e.message)||'';
+    toast(/permission/i.test(m)?'この操作の権限がありません':'通信できませんでした。電波の良いところでもう一度お試しください')}
+  function push(){if(S.state!=='ready')return;
+    for(const k of keys()){const u=unitOf(k);if(!u)continue;const s=J(u);if(s!==base[k])write(k,s)}
+    if(S.isAdmin)for(const k of Object.keys(base))if(k.startsWith('gachas/')&&!unitOf(k)&&!inflight[k]){delete base[k];delete ver[k];FBX.del(k).catch(fail)}}
+  function write(k,s){
+    if(inflight[k]){inflight[k]='again';return}
+    const isNew=!(k in base),b=isNew?null:JSON.parse(base[k]),sent=JSON.parse(s);
+    inflight[k]=true;base[k]=s;
+    const p=isNew?(()=>{const d={...sent,_v:1};return FBX.set(k,d).then(()=>d)})()
+      :FBX.tx(k,sv=>{const m=sv?merge3(sv,b,sent):{...sent};m._v=((sv&&sv._v)||0)+1;return m});
+    p.then(res=>done(k,res,sent)).catch(e=>{inflight[k]=false;if(isNew)delete base[k];else base[k]=J(b);fail(e);setTimeout(push,5000)});
+  }
+  function done(k,res,sent){inflight[k]=false;if(!res)return;
+    const m0=noV(res);base[k]=J(m0);ver[k]=res._v||ver[k]||0;
+    const loc=unitOf(k);if(loc){const m=merge3(m0,sent,loc);if(J(m)!==J(loc)){applyUnit(k,m);changed()}}
+    const h=held[k];delete held[k];if(h&&(h._v||0)>(ver[k]||0))onRemote(k,h);
+    const now=unitOf(k);if(now&&J(now)!==base[k])write(k,J(now))}
+  function onRemote(k,d){
+    if(d){const v=d._v||0;
+      if(inflight[k]){if(!held[k]||v>(held[k]._v||0))held[k]=d;return}
+      if(v<(ver[k]||0))return;
+      const sv=noV(d),s=J(sv);if(s===base[k]){ver[k]=v;return}
+      const loc=unitOf(k),b=base[k]!=null?JSON.parse(base[k]):null;
+      const m=loc&&b?merge3(sv,b,loc):sv;
+      base[k]=s;ver[k]=v;applyUnit(k,m);if(J(m)!==s)push();changed();
+    }else{if(inflight[k])return;if(!(k in base))return;delete base[k];delete ver[k];removeUnit(k);changed()}}
+  function onList(c,list,tag){const seen=new Set();
+    list.forEach(({id,data})=>{const k=c+'/'+id;seen.add(k);onRemote(k,data)});
+    for(const k of Object.keys(base))if(k.startsWith(c+'/')&&!seen.has(k)&&!inflight[k])onRemote(k,null);
+    if(tag)mark(tag)}
+  // 画面の更新（入力中・演出中は待つ）
+  function busy(){const a=document.activeElement;return !!($('#modalRoot').innerHTML||document.querySelector('.fx')||Draw.on||(a&&a.closest&&a.closest('#app')&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)))}
+  function changed(){if(S.state!=='ready')return;clearTimeout(renderT);renderT=setTimeout(flush,150)}
+  function flush(){if(busy()){renderHeader();clearTimeout(renderWait);renderWait=setTimeout(flush,900);return}keepScroll(render)}
+  // 読み込み
+  const NEED=['admins','gachas','main','me','winners','subs','requests'];
+  function mark(t){got.add(t);if(S.state==='loading'&&NEED.every(x=>got.has(x)))finishBoot()}
+  function L(u){unsubs.push(u)}
+  function start(){stopAll();got.clear();
+    L(FBX.watchDoc('config/admins',d=>{S.admins=(d&&d.emails)||[];const was=S.isAdmin;S.isAdmin=S.admins.includes(S.email);
+      if(!d&&!S.adminSeen){S.adminSeen=true;FBX.set('config/admins',{emails:[S.email]}).catch(fail)}
+      if(d||got.has('admins'))mark('admins');if(was!==S.isAdmin||!S.scoped){S.scoped=true;scope()}if(S.state==='ready'){if(!S.isAdmin&&tab==='admin')tab='gacha';changed()}},fail));
+    L(FBX.watchCol('gachas',{},list=>onList('gachas',list,'gachas'),fail));
+    L(FBX.watchDoc('config/main',d=>{onRemote('config/main',d);mark('main')},fail));
+    L(FBX.watchDoc('users/'+S.email,d=>{onRemote('users/'+S.email,d);mark('me')},fail));
+    L(FBX.watchCol('winners',{order:'at',limit:50},list=>onList('winners',list,'winners'),fail));
+  }
+  // 自分だけ見られるもの／管理者は全員分
+  function scope(){scopeUnsubs.forEach(u=>{try{u()}catch(e){}});scopeUnsubs=[];
+    const own=S.isAdmin?{}:{eq:['email',S.email]};
+    if(S.isAdmin)scopeUnsubs.push(FBX.watchCol('users',{},list=>onList('users',list),fail));
+    else for(const k of Object.keys(base))if(k.startsWith('users/')&&k!=='users/'+S.email){delete base[k];delete db.users[k.slice(6)]}
+    scopeUnsubs.push(FBX.watchCol('subs',own,list=>onList('subs',list,'subs'),fail));
+    scopeUnsubs.push(FBX.watchCol('requests',own,list=>onList('requests',list,'requests'),fail));
+  }
+  function stopAll(){[...unsubs,...scopeUnsubs].forEach(u=>{try{u()}catch(e){}});unsubs=[];scopeUnsubs=[];S.scoped=false}
+  function emptyDB(){return {users:{},session:null,gachas:[],requests:[],subs:[],winners:[],answers:[],cases:[],settings:{shipPt:80,freePt:300,target:50},dayOffset:0,lastRoll:null,rollLog:[]}}
+  function wipe(){for(const k in base)delete base[k];for(const k in ver)delete ver[k];db=emptyDB()}
+  function finishBoot(){
+    // 最初の管理者が、ガチャの初期データを用意する
+    if(S.isAdmin&&!db.gachas.length&&!('config/main' in base)){
+      db.gachas=DEFAULT_GACHAS.map(d=>buildGacha({...d,filled:null}));db.cases=null;migrateCases();
+      db.settings={shipPt:80,freePt:300,target:50};db.lastRoll=monthKey(now());db.rollLog=[];syncAllGifts()}
+    let u=db.users[S.email],isNew=false;
+    if(!u){const p=S.pending||{};isNew=true;
+      u=db.users[S.email]=makeUser(p.name||S.email.split('@')[0],S.email,now());addTickets(u,3,'新規登録ボーナス');
+      u.consent=p.consent||{terms:now(),share:null}}
+    u.consent=u.consent||{terms:null,share:null};u.caseConsents=u.caseConsents||{};
+    touchLogin(u);S.pending=null;db.session=S.email;S.state='ready';
+    if(!S.isAdmin&&tab==='admin')tab='gacha';
+    push();render();toast(isNew?'登録ボーナス 3枚を受け取りました':'おかえりなさい、'+u.name+'さん');
+  }
+  // ガチャを引く：BOXの残り数はサーバーで順番に減らす
+  async function drawTx(gid,fn){const k='gachas/'+gid;for(let i=0;inflight[k]&&i<50;i++)await sleep(100);
+    inflight[k]=true;let out=null;
+    try{const res=await FBX.tx(k,sv=>{if(!sv)return undefined;const g=noV(sv);const ord=g.ord;delete g.ord;out=fn(g);if(!out)return undefined;
+        const nd={...stripG(g),ord};nd._v=(sv._v||0)+1;return nd});
+      inflight[k]=false;
+      if(res){base[k]=J(noV(res));ver[k]=res._v;applyUnit(k,noV(res))}else out=null;
+      const h=held[k];delete held[k];if(h&&(h._v||0)>(ver[k]||0))onRemote(k,h);
+      return out}
+    catch(e){inflight[k]=false;throw e}}
+  const AUTH_ERR={'auth/email-already-in-use':'このメールアドレスは登録済みです。「ログイン」から入ってください。','auth/invalid-credential':'メールアドレスかパスワードが違います。',
+    'auth/wrong-password':'メールアドレスかパスワードが違います。','auth/user-not-found':'メールアドレスかパスワードが違います。','auth/weak-password':'パスワードは6文字以上にしてください。',
+    'auth/invalid-email':'メールアドレスの形が正しくありません。','auth/too-many-requests':'何度も失敗したため、少し時間をおいてからお試しください。',
+    'auth/network-request-failed':'通信できませんでした。電波の良いところでお試しください。','auth/operation-not-allowed':'メールでのログインがまだ使えません（管理者の設定待ち）。'};
+  const authMsg=e=>AUTH_ERR[e&&e.code]||'うまくいきませんでした（'+((e&&(e.code||e.message))||'不明')+'）';
+  function setErr(m){const el=$('#lgErr');if(el)el.textContent=m}
+  async function submit(){
+    const m=($('#lg-mail')||{}).value?.trim().toLowerCase()||'',pw=($('#lg-pass')||{}).value||'';
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(m)){setErr('正しいメールアドレスを入力してください。');return}
+    if(pw.length<6){setErr('パスワードは6文字以上です。');return}
+    const btn=$('#authForm button[type=submit]');if(btn){btn.disabled=true;btn.textContent='確認しています…'}
+    try{
+      if(S.mode==='signup'){const n=$('#lg-name').value.trim();
+        if(!n){setErr('ニックネームを入力してください。');if(btn){btn.disabled=false;btn.textContent='登録してはじめる'}return}
+        if(!$('#lg-agree').checked){setErr('利用規約とプライバシーポリシーへの同意が必要です。');if(btn){btn.disabled=false;btn.textContent='登録してはじめる'}return}
+        S.pending={name:n,consent:{terms:Date.now(),share:$('#lg-share').checked?Date.now():null}};
+        await FBX.signUp(m,pw)}
+      else await FBX.signIn(m,pw);
+    }catch(e){S.pending=null;setErr(authMsg(e));if(btn){btn.disabled=false;btn.textContent=S.mode==='signup'?'登録してはじめる':'ログイン'}}
+  }
+  async function reset(){const m=($('#lg-mail')||{}).value?.trim().toLowerCase()||'';
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(m)){setErr('先にメールアドレスを入力してから押してください。');return}
+    try{await FBX.reset(m);setErr('');toast('パスワード再設定のメールを送りました')}catch(e){setErr(authMsg(e))}}
+  function view(){
+    if(S.state==='out')return viewLoginShared(S.mode);
+    if(S.state==='error')return `<section class="panel"><div class="card"><h2>開けませんでした</h2><p class="muted">${esc(S.err)}</p><button class="btn" data-act="reload">もう一度開く</button></div></section>`;
+    return `<section class="panel"><div class="card loading"><span class="spin" aria-hidden="true"></span><p class="muted">読み込み中…</p></div></section>`}
+  function boot(){db=emptyDB();render();
+    const go=()=>FBX.onAuth(a=>{
+      if(a&&a.email){if(S.email===a.email&&S.state!=='out')return;S.email=a.email.toLowerCase();S.state='loading';S.adminSeen=false;S.isAdmin=false;wipe();render();start()}
+      else{stopAll();S.state='out';S.email=null;S.isAdmin=false;wipe();tab='gacha';render()}});
+    if(window.FBX)go();else{window.addEventListener('fbready',go,{once:true});
+      setTimeout(()=>{if(!window.FBX){S.state='error';S.err='サーバーにつながりませんでした。通信を確認して、開き直してください。';render()}},20000)}}
+  return {boot,push,drawTx,submit,reset,view,
+    state:()=>S.state,isAdmin:()=>S.isAdmin,admins:()=>S.admins.slice(),email:()=>S.email,
+    setMode:m=>{S.mode=m;render()},
+    signOut:()=>FBX.signOut(),
+    addAdmin:e=>FBX.tx('config/admins',d=>{const l=(d&&d.emails)||[];return l.includes(e)?undefined:{emails:[...l,e]}}),
+    delAdmin:e=>FBX.tx('config/admins',d=>{const l=(d&&d.emails)||[];return {emails:l.filter(x=>x!==e)}}),
+    _debug:()=>({S,base,ver,inflight})};
+})();
+const Draw={on:false};
+
 // キリ番賞の初期設定（BOX内の◯回目ごとに出る特別賞）
 const KIRI_DEFAULT={gift:['ギフトカード 1,000円分',1100,1],game:['ゲーム用プリペイドカード 1,000円分',1100,1],toy:['デジタルギフト 500円分',550,1],kaden:['デジタルギフト 500円分',550,1]};
 function kiriFor(id){const k=KIRI_DEFAULT[id];return k?{every:500,name:k[0],cost:k[1],pt:50,digital:!!k[2]}:{every:0,name:'',cost:0,pt:0,digital:true}}
@@ -883,24 +1080,42 @@ function askDraw(n){
   openModal(`<h3>${esc(g.name)}を${count}回引きますか？</h3><p>チケットを <b class="num">${cost}枚</b> 使います。残り ${u.tickets-cost}枚になります。</p>${capped}
     <div class="row"><button class="btn ghost" data-act="close">やめる</button><span class="spacer"></span><button class="btn" data-act="confirmDraw" data-n="${count}">${count}回引く</button></div>`);
 }
-function doDraw(count){
+// BOXから引く（BOXだけを変える。共有版ではサーバー上で順番に実行される）
+function boxDraw(g,count,name){
+  if(gLeft(g)<count)return null;
+  const T0=gTotal(g),ev=g.kiri&&g.kiri.every>0?g.kiri.every:0,boxNo=g.no,picks=[];
+  for(let i=0;i<count;i++){const p=drawOne(g);const nth=T0-gLeft(g);picks.push({pid:p.id,kiri:ev&&nth%ev===0&&nth<T0?nth:0})}
+  let lastOne=false;
+  if(gLeft(g)===0){lastOne=true;g.history.unshift({no:g.no,winner:name,at:now()});g.no++;resetBox(g)}
+  return {picks,lastOne,boxNo};
+}
+// 引いた結果を会員に反映する
+function applyDraw(u,g,count,r){
+  addTickets(u,-count*g.cost,`${g.name} ${count}回（BOX #${r.boxNo}）`);
+  const results=[];results.kiri=[];
+  for(const x of r.picks){const p=g.prizes.find(q=>q.id===x.pid)||{id:x.pid,name:'-'};results.push(p);
+    u.prizes.unshift({uid:uid(),gid:g.id,pid:p.id,box:r.boxNo,at:now(),status:'held'});if(p.id<='C')addWinner(u,g.id,p.id);
+    if(x.kiri){results.kiri.push(x.kiri);u.prizes.unshift({uid:uid(),gid:g.id,pid:'K',box:r.boxNo,no:x.kiri,at:now(),status:'held'});addWinner(u,g.id,'K',x.kiri)}}
+  if(r.lastOne){u.prizes.unshift({uid:uid(),gid:g.id,pid:'L',box:r.boxNo,at:now(),status:'held'});addWinner(u,g.id,'L')}
+  u.stats.draws+=count;
+  return results;
+}
+async function doDraw(count){
   closeModal();
-  const g=G(gsel),u=cur(),cost=count*g.cost;
-  if(u.tickets<cost||gLeft(g)<count)return;
-  sfx.crank();const rk0=rankOf(u.stats.draws).n;
-  addTickets(u,-cost,`${g.name} ${count}回（BOX #${g.no}）`);
-  const results=[];
-  const T0=gTotal(g),ev=g.kiri&&g.kiri.every>0?g.kiri.every:0;results.kiri=[];
-  for(let i=0;i<count;i++){const p=drawOne(g);results.push(p);u.prizes.unshift({uid:uid(),gid:g.id,pid:p.id,box:g.no,at:now(),status:'held'});if(p.id<='C')addWinner(u,g.id,p.id);
-    const nth=T0-gLeft(g);if(ev&&nth%ev===0&&nth<T0){results.kiri.push(nth);u.prizes.unshift({uid:uid(),gid:g.id,pid:'K',box:g.no,no:nth,at:now(),status:'held'});addWinner(u,g.id,'K',nth)}}
-  let lastOne=false;const boxNo=g.no;
-  if(gLeft(g)===0){
-    lastOne=true;
-    u.prizes.unshift({uid:uid(),gid:g.id,pid:'L',box:g.no,at:now(),status:'held'});addWinner(u,g.id,'L');
-    g.history.unshift({no:g.no,winner:u.name,at:now()});
-    g.no++;resetBox(g);
-  }
-  u.stats.draws+=count;save();
+  if(Draw.on)return;
+  const g0=G(gsel),u0=cur();if(!g0||!u0)return;const cost=count*g0.cost;
+  if(u0.tickets<cost||gLeft(g0)<count)return;
+  sfx.crank();const rk0=rankOf(u0.stats.draws).n;
+  let r;
+  if(SHARED){Draw.on=true;const m=$('#machine');m&&m.classList.add('wait');
+    r=undefined;try{r=await Sync.drawTx(g0.id,g=>boxDraw(g,count,u0.name))}catch(e){console.warn(e);r=undefined}
+    Draw.on=false;m&&m.classList.remove('wait');
+    if(!r){toast(r===undefined?'通信できませんでした。もう一度お試しください':'ほかの人が先に引いたため、BOXの残りが足りません');keepScroll(render);return}
+  }else r=boxDraw(g0,count,u0.name);
+  if(!r){keepScroll(render);return}
+  const g=G(g0.id),u=cur();
+  const results=applyDraw(u,g,count,r),lastOne=r.lastOne,boxNo=r.boxNo;
+  save();
   const rk1=rankOf(u.stats.draws);if(rk1.n!==rk0)rankUpTo=rk1;
   let bestId=lastOne?'L':results.reduce((a,p)=>p.id<a.id?p:a,results[0]).id;
   if(results.kiri.length&&fxTier(bestId)<2)bestId='K';
@@ -1052,7 +1267,7 @@ function submitCase(form){
   const c=CS(form.dataset.cid),u=cur(),last=latestSub(u.email,c.id);
   if(!pendingImg){$('#csErr').textContent='スクリーンショットを選んでください。';return}
   if(last&&last.status!=='ng'){closeModal();return}
-  const id='S'+String(db.subs.length+1).padStart(4,'0');
+  const id=SHARED?'S'+uid().slice(0,6).toUpperCase():'S'+String(db.subs.length+1).padStart(4,'0');
   db.subs.unshift({id,email:u.email,user:u.name,caseId:c.id,img:pendingImg,hash:hash(pendingImg),regId:$('#cs-id').value.trim(),status:'review',at:now()});
   pendingImg=null;save();closeModal();render();toast('提出しました。承認されるとポイントが付与されます');
 }
@@ -1155,7 +1370,7 @@ function submitExchange(){
     if(e.length){$('#exErr').textContent=e.join('・')+' を確認してください。';return}
   }
   if((u.points||0)<fee){$('#exErr').textContent='送料のポイントが足りません。';return}
-  const rid='R'+String(db.requests.length+1).padStart(4,'0');
+  const rid=SHARED?'R'+uid().slice(0,6).toUpperCase():'R'+String(db.requests.length+1).padStart(4,'0');
   if(fee)addPoints(u,-fee,`送料（申請 ${rid}）`);
   items.forEach(p=>{p.status='req';p.rid=rid});
   db.requests.unshift({id:rid,email:u.email,user:u.name,...addr,fee,items:items.map(p=>({gid:p.gid,pid:p.pid})),status:'req',at:now()});
@@ -1469,6 +1684,7 @@ function keepScroll(fn){const y=window.scrollY,sc=[...document.querySelectorAll(
 /* ---------- render ---------- */
 function renderHeader(){
   const u=cur();$('#hdr').hidden=!u;$('#nav').hidden=!u;if(!u)return;
+  const ab=document.querySelector('nav.tabs [data-tab=admin]');if(ab){const h=SHARED&&!Sync.isAdmin();ab.style.display=h?'none':'';$('#nav .in').style.gridTemplateColumns=h?'repeat(3,1fr)':''}
   $('#balNum').textContent=u.tickets;
   document.querySelectorAll('nav.tabs button').forEach(b=>b.setAttribute('aria-current',b.dataset.tab===tab?'page':'false'));
   $('#tDot').hidden=!hasClaimable(u);
@@ -1478,6 +1694,7 @@ function renderHeader(){
 }
 function hasClaimable(u){return u.dailyClaimed!==today()||u.scratchPending!=null||(u.streak>=7&&u.streak7Claimed!==u.streakStart)||MISSIONS.some(m=>!u.missions.includes(m.id)&&m.val(u)>=m.goal)}
 function render(){
+  if(SHARED&&Sync.state()!=='ready'){renderHeader();$('#app').innerHTML=Sync.view()+footerHTML();return}
   if(db){const n=rollover();if(n)setTimeout(()=>toast(`${new Date(now()).getMonth()+1}月の景品に入れ替えました（${n}件）`),50)}
   renderHeader();
   const u=cur();const app=$('#app');
@@ -1485,7 +1702,7 @@ function render(){
   if(!G(gsel)||!live().includes(G(gsel)))gsel=(live()[0]||{}).id;
   app.innerHTML=({gacha:viewGacha,tickets:viewTickets,prizes:viewPrizes,admin:viewAdmin}[tab])(u)+footerHTML();
 }
-function footerHTML(){return `<footer class="foot"><a href="#" data-act="policy">プライバシーポリシー</a><a href="#" data-act="terms">利用規約</a><a href="#" data-act="terms">特定商取引法に基づく表記</a><span>© 株式会社EXCEED</span></footer>`}
+function footerHTML(){return `<footer class="foot">${SHARED&&cur()?'<a href="#" data-act="logout">ログアウト</a>':''}<a href="#" data-act="policy">プライバシーポリシー</a><a href="#" data-act="terms">利用規約</a><a href="#" data-act="terms">特定商取引法に基づく表記</a><span>© 株式会社EXCEED</span></footer>`}
 function openPolicy(){
   const T=(h,rows)=>`<div class="tablewrap"><table class="odds"><thead><tr>${h.map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(x=>`<td>${x}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
   openModal(`<div class="policy"><h3>プライバシーポリシー</h3>
@@ -1544,6 +1761,28 @@ function viewLogin(){
         <button class="btn" type="submit">はじめる</button>
       </form>
       <p class="note" style="margin-top:12px">デモ版です。データはこの端末のブラウザ内だけに保存され、パスワードは確認していません。</p></div>
+  </section>`;
+}
+
+function viewLoginShared(mode){
+  const su=mode==='signup';
+  return `<section class="panel">
+    ${installHTML()}
+    <div class="hero"><span class="eyebrow">WEB BOX GACHA</span><h1>チケットで引く、<br><em>ラストワン</em>まで。</h1>
+      <p class="muted">アンケートや登録でポイントを集めてチケットに。ギフトカード・ゲーム機・TOY・家電のBOXガチャを1回・10回・100回で。</p></div>
+    <div class="card"><div class="seg" role="tablist"><button type="button" role="tab" aria-selected="${su}" data-act="authMode" data-m="signup">新規登録</button><button type="button" role="tab" aria-selected="${!su}" data-act="authMode" data-m="login">ログイン</button></div>
+      <form class="form" id="authForm" style="margin-top:12px" novalidate>
+        ${su?'<label class="f">ニックネーム<input id="lg-name" autocomplete="nickname" maxlength="20" required></label><p class="small muted" style="margin-top:-6px">当選者速報には先頭の1文字だけ表示されます。</p>':''}
+        <label class="f">メールアドレス<input id="lg-mail" type="email" autocomplete="email" inputmode="email" required></label>
+        <label class="f">パスワード（6文字以上）<input id="lg-pass" type="password" autocomplete="${su?'new-password':'current-password'}" minlength="6" required></label>
+        ${su?`<div class="consent">
+          <label class="check small"><input type="checkbox" id="lg-agree"><span><a href="#" data-act="terms">利用規約</a>と<a href="#" data-act="policy">プライバシーポリシー</a>に同意します（必須）</span></label>
+          <label class="check small"><input type="checkbox" id="lg-share"><span>アンケートや案件に参加したとき、回答内容・属性情報（性別、年代、都道府県など）・メールアドレス・登録IDを、その案件の依頼元企業に提供することに同意します（任意）。氏名・住所・電話番号は提供しません。</span></label>
+        </div>`:''}
+        <div class="err" id="lgErr"></div>
+        <button class="btn" type="submit">${su?'登録してはじめる':'ログイン'}</button>
+        ${su?'<p class="small muted">はじめての方は登録ボーナスでチケット3枚。</p>':'<button type="button" class="linkbtn small" data-act="pwReset">パスワードを忘れた方</button>'}
+      </form></div>
   </section>`;
 }
 
@@ -1698,13 +1937,17 @@ function viewPrizes(u){
   </section>`;
 }
 
+function adminsCard(){const me=Sync.email();
+  return `<div class="card"><h2>管理者</h2><p class="small muted">管理画面を見られる人です。ここにメールアドレスを追加した人は、ログインすると「管理」タブが出ます。</p>
+    <div class="list">${Sync.admins().map(e=>`<div class="item"><div class="t"><b style="font-weight:500">${esc(e)}</b>${e===me?'<span class="small muted">あなた</span>':''}</div>${e===me?'':`<button class="btn small ghost" data-act="admDel" data-email="${esc(e)}">外す</button>`}</div>`).join('')}</div>
+    <div class="row" style="margin-top:10px"><input id="adm-mail" type="email" placeholder="追加するメールアドレス" style="flex:1;min-width:0"><button class="btn small" data-act="admAdd">追加</button></div></div>`}
 function viewAdmin(u){
   const users=Object.values(db.users);
   const pend=db.requests.filter(r=>r.status==='req');
   const ag=G(adminG)||db.gachas[0];adminG=ag.id;
   const T=gTotal(ag),L=gLeft(ag);
   return `<section class="panel">
-    <p class="note">管理画面（デモ）。本番では管理者アカウントだけが見られる別画面にします。</p>
+    ${SHARED?adminsCard():'<p class="note">管理画面（デモ）。本番では管理者アカウントだけが見られる別画面にします。</p>'}
     <div class="stats"><div class="stat"><span class="small muted">公開中のガチャ</span><b class="num">${live().length}</b></div><div class="stat"><span class="small muted">報告の確認待ち</span><b class="num">${db.subs.filter(s=>s.status==='review').length}</b></div><div class="stat"><span class="small muted">未発送</span><b class="num">${pend.length}</b></div></div>
 
     ${adminGachaCard()}
@@ -1739,12 +1982,12 @@ function viewAdmin(u){
       ${db.requests.length?`<div class="list">${db.requests.map(r=>`<div class="item"><div class="t"><b>${r.id}　${esc(r.name||r.user)}</b><span class="small muted">${r.zip?`〒${esc(r.zip)} ${esc(r.addr)}<br>TEL ${esc(r.tel)}<br>`:''}${esc(r.email)}・送料 ${r.fee?r.fee+'pt':'無料'}<br>${groupCount(r.items).map(x=>{const z=prizeOf(x.gid,x.pid);return esc((G(x.gid)?.name||'')+'：'+z.name)+'×'+x.n+(z.digital?'（メール）':'（配送）')}).join('<br>')}${r.note?'<br>備考：'+esc(r.note):''}</span></div>
         ${r.status==='req'?`<button class="btn small" data-act="ship" data-id="${r.id}">発送済にする</button>`:'<span class="pill ship">発送済</span>'}</div>`).join('')}</div>`:'<p class="muted">申請はまだありません。</p>'}
     </div>
-    <div class="card"><h2>会員</h2><div class="list">${users.map(x=>`<div class="item"><div class="t"><b>${esc(x.name)}</b><span class="small muted">${esc(x.email)}・累計${x.stats.draws}回<br>規約同意：${x.consent&&x.consent.terms?fmtT(x.consent.terms):'未記録'}・情報提供の同意：${x.consent&&x.consent.share?fmtT(x.consent.share):'なし'}</span></div><span class="num">${x.tickets}枚・${x.points||0}pt</span></div>`).join('')}</div></div>
-    <div class="card"><h2>デモ操作</h2><div class="form">
+    <div class="card"><h2>会員</h2><div class="list">${users.map(x=>`<div class="item"><div class="t"><b>${esc(x.name)}</b><span class="small muted">${esc(x.email)}・累計${x.stats.draws}回<br>規約同意：${x.consent&&x.consent.terms?fmtT(x.consent.terms):'未記録'}・情報提供の同意：${x.consent&&x.consent.share?fmtT(x.consent.share):'なし'}</span></div><span class="num">${x.tickets}枚・${x.points||0}pt</span>${SHARED?`<button class="btn small ghost" data-act="grantTo" data-email="${esc(x.email)}">+10枚</button>`:''}</div>`).join('')}</div></div>
+    ${SHARED?`<div class="card"><h2>自分のアカウント</h2><div class="row"><button class="btn small ghost" data-act="grant">自分に50枚付与</button><button class="btn small ghost" data-act="logout">ログアウト</button></div></div>`:`    <div class="card"><h2>デモ操作</h2><div class="form">
       <div class="row"><button class="btn small ghost" data-act="grant">自分に50枚付与</button><button class="btn small ghost" data-act="nextDay">日付を1日進める</button><button class="btn small ghost" data-act="nextMonth">次の1日まで進める</button><button class="btn small ghost" data-act="logout">ログアウト</button></div>
       <p class="small muted">「日付を1日進める」でデイリー・連続ログイン・広告回数の切り替わりを試せます（現在 ${today()}）。</p>
       <button class="btn small ghost" style="color:var(--danger);border-color:var(--danger);align-self:flex-start" data-act="resetAsk">デモデータを初期化</button>
-    </div></div>
+    </div></div>`}
   </section>`;
 }
 /* ---------- events ---------- */
@@ -1755,7 +1998,11 @@ document.addEventListener('click',e=>{
   if(a==='sel'||a==='ccToggle')return;
   const aa=adminActs(el);if(aa[a]){aa[a]();return}
   const acts={
-    goTab:()=>{closeModal();tab=el.dataset.tab;render();window.scrollTo(0,0)},
+    goTab:()=>{closeModal();tab=el.dataset.tab;if(SHARED&&tab==='admin'&&!Sync.isAdmin())tab='gacha';render();window.scrollTo(0,0)},
+    authMode:()=>Sync.setMode(el.dataset.m),pwReset:()=>Sync.reset(),reload:()=>location.reload(),
+    grantTo:()=>{const x=db.users[el.dataset.email];if(x){addTickets(x,10,'管理者から付与');save();keepScroll(render);toast(x.name+'さんに10枚付与しました')}},
+    admAdd:()=>{const e=($('#adm-mail').value||'').trim().toLowerCase();if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)){toast('メールアドレスを確認してください');return}Sync.addAdmin(e).then(()=>toast(e+' を管理者にしました')).catch(()=>toast('追加できませんでした'))},
+    admDel:()=>{const e=el.dataset.email;Sync.delAdmin(e).then(()=>toast(e+' を管理者から外しました')).catch(()=>toast('外せませんでした'))},
     close:closeModal,
     odds:openOdds,
     pickG:()=>{gsel=el.dataset.g;keepScroll(render)},
@@ -1800,7 +2047,7 @@ document.addEventListener('click',e=>{
     winHide:()=>{const x=db.winners.find(w=>w.id===el.dataset.id);if(x){x.hidden=!x.hidden;save();keepScroll(render)}},
     nextMonth:()=>{db.dayOffset=(db.dayOffset||0)+daysToNext();touchLogin(cur());save();render();toast('日付を '+today()+' に進めました')},
     nextDay:()=>{db.dayOffset=(db.dayOffset||0)+1;touchLogin(cur());save();render();toast('日付を '+today()+' に進めました')},
-    logout:()=>{db.session=null;selected.clear();tab='gacha';save();render()},
+    logout:()=>{if(SHARED){selected.clear();tab='gacha';Sync.signOut();return}db.session=null;selected.clear();tab='gacha';save();render()},
     resetAsk:()=>openModal(`<h3>デモデータを初期化しますか？</h3><p>会員・チケット・景品・申請・追加したガチャがすべて消えます。</p><div class="row"><button class="btn ghost" data-act="close">やめる</button><span class="spacer"></span><button class="btn" style="background:var(--danger);color:#fff" data-act="reset">初期化する</button></div>`),
     reset:()=>{db=fresh();save();selected.clear();tab='gacha';gsel='gift';adminG='gift';closeModal();render();toast('初期化しました')}
   };
@@ -1818,6 +2065,7 @@ document.addEventListener('change',e=>{
 });
 document.addEventListener('submit',e=>{
   e.preventDefault();const f=e.target;
+  if(f.id==='authForm'){Sync.submit();return}
   if(f.id==='loginForm'){
     const n=$('#lg-name').value.trim(),m=$('#lg-mail').value.trim();
     if(!n||!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(m)){$('#lgErr').textContent='ニックネームと正しいメールアドレスを入力してください。';return}
@@ -1842,16 +2090,48 @@ document.addEventListener('submit',e=>{
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 document.addEventListener('input',e=>{if(e.target.id==='ce-yen'||e.target.id==='ce-pt')updRate()});
 
+if(SHARED)Sync.boot();else{
 db=load();
 migrateCases();
 db.gachas.forEach(g=>{if(!g.kiri)g.kiri=kiriFor(g.id)});
 syncAllGifts();save();
 // 文字のフォントが読み込めたら、自動で作った画像を描き直す
-if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{for(const k in BOX_CACHE)delete BOX_CACHE[k];syncAllGifts(true);save();render()});
+}
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{for(const k in BOX_CACHE)delete BOX_CACHE[k];for(const k in GEN_CACHE)delete GEN_CACHE[k];if(db&&db.gachas)syncAllGifts(true);if(!SHARED)save();render()});
+if(!SHARED){
 if(cur()){touchLogin(cur());save()}
 render();
+}
 </script>
 
+<script type="module">
+// Firebase（ログインと共有データ）に接続する
+(async()=>{
+  const V='https://www.gstatic.com/firebasejs/10.14.1/';
+  try{
+    const [{initializeApp},A,F]=await Promise.all([import(V+'firebase-app.js'),import(V+'firebase-auth.js'),import(V+'firebase-firestore.js')]);
+    const app=initializeApp({"apiKey": "AIzaSyDJmAovgKN0p8xGM7h-5y5ko5_ICCZ-ltw", "authDomain": "exkuji-demo-10151927.firebaseapp.com", "projectId": "exkuji-demo-10151927", "storageBucket": "exkuji-demo-10151927.firebasestorage.app", "messagingSenderId": "810483955408", "appId": "1:810483955408:web:cf75f5fd14764acd9150d5"});
+    const auth=A.getAuth(app);
+    const fs=F.initializeFirestore(app,{experimentalAutoDetectLongPolling:true});
+    const R=p=>F.doc(fs,p);
+    window.FBX={
+      onAuth:cb=>A.onAuthStateChanged(auth,u=>cb(u&&u.email?{email:u.email.toLowerCase()}:null)),
+      signUp:(e,p)=>A.createUserWithEmailAndPassword(auth,e,p),
+      signIn:(e,p)=>A.signInWithEmailAndPassword(auth,e,p),
+      reset:e=>A.sendPasswordResetEmail(auth,e),
+      signOut:()=>A.signOut(auth),
+      watchDoc:(p,cb,err)=>F.onSnapshot(R(p),s=>cb(s.exists()?s.data():null),err),
+      watchCol:(c,o,cb,err)=>{const cs=[];o=o||{};
+        if(o.eq)cs.push(F.where(o.eq[0],'==',o.eq[1]));if(o.order)cs.push(F.orderBy(o.order,'desc'));if(o.limit)cs.push(F.limit(o.limit));
+        return F.onSnapshot(F.query(F.collection(fs,c),...cs),s=>cb(s.docs.map(d=>({id:d.id,data:d.data()}))),err)},
+      tx:(p,fn)=>F.runTransaction(fs,async t=>{const s=await t.get(R(p));const nd=fn(s.exists()?s.data():null);if(nd===undefined)return undefined;t.set(R(p),nd);return nd}),
+      set:(p,d)=>F.setDoc(R(p),d),
+      del:p=>F.deleteDoc(R(p))
+    };
+    window.dispatchEvent(new Event('fbready'));
+  }catch(e){console.error('Firebaseに接続できませんでした',e)}
+})();
+</script>
 <script>
 if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})})}
 </script>

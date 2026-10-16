@@ -4,7 +4,12 @@
     "ignore": [
       "firebase.json",
       "README.txt",
-      "**/.*"
+      "**/.*",
+      "firestore.rules",
+      "src/**",
+      "build.py",
+      "**/*.command",
+      "*.zip"
     ],
     "headers": [
       {
@@ -17,5 +22,8 @@
         ]
       }
     ]
+  },
+  "firestore": {
+    "rules": "firestore.rules"
   }
 }
