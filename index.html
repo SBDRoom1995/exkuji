@@ -22,8 +22,8 @@ img{max-width:100%}
 html,body{overscroll-behavior-y:none}
 </style>
 <script>window.EX_APP=true;</script>
-<meta name="exkuji-build" content="10/20 17:29">
-<script>window.EX_SHARED=true;window.EX_BUILD="版 10/20 17:29";</script>
+<meta name="exkuji-build" content="10/20 17:38">
+<script>window.EX_SHARED=true;window.EX_BUILD="版 10/20 17:38";</script>
 </head>
 
 <body>
@@ -498,7 +498,7 @@ header.top .wrap{gap:8px}
 .seg button[aria-selected="true"]{background:var(--blue,#3D8BFF);color:#fff}
 .linkbtn{background:none;border:0;color:var(--blue,#3D8BFF);text-decoration:underline;cursor:pointer;padding:4px 0;align-self:flex-start;font:inherit}
 .card.loading{display:flex;flex-direction:column;align-items:center;gap:10px;padding:40px 16px}
-.spin{width:34px;height:34px;border-radius:50%;border:3px solid rgba(255,255,255,.15);border-top-color:var(--gold,#FFD25A);animation:spin 1s linear infinite}
+.ldspin{display:inline-block;width:34px;height:34px;border-radius:50%;border:3px solid rgba(255,255,255,.15);border-top-color:var(--gold,#FFD25A);animation:spin 1s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 #machine.wait{opacity:.85}
 
@@ -527,6 +527,40 @@ header.top .wrap{gap:8px}
 .areas{border:1px solid var(--line);border-radius:12px;padding:10px 12px}.areas summary{cursor:pointer}
 
 .sharebtn{width:100%;margin:6px 0 2px;background:linear-gradient(90deg,#FF5FA2,#FFD25A);color:#111;font-weight:800}
+
+/* ガチャ機：投入口・レバーのつまみ・受け皿 */
+.body .slot{position:absolute;left:50%;top:14px;translate:-50% 0;width:34px;height:12px;border-radius:6px;background:rgba(0,0,0,.45);box-shadow:inset 0 2px 3px rgba(0,0,0,.6),0 0 0 3px rgba(255,255,255,.18)}
+.body .slot i{position:absolute;inset:3px 5px;border-radius:3px;background:#000}
+.body .slot.gulp{animation:gulp .28s ease-out}
+.machine.insert .slot{box-shadow:inset 0 2px 3px rgba(0,0,0,.6),0 0 0 3px #FFD25A,0 0 18px #FFD25A}
+@keyframes gulp{0%{scale:1}40%{scale:1.35 1.6}100%{scale:1}}
+.tkfly{position:fixed;z-index:80;width:44px;height:28px;border-radius:6px;pointer-events:none;
+  background:radial-gradient(circle at 0 50%,transparent 6px,#FFD25A 6.5px) left/51% 100% no-repeat,radial-gradient(circle at 100% 50%,transparent 6px,#FFB020 6.5px) right/51% 100% no-repeat;
+  box-shadow:0 4px 14px rgba(255,190,40,.6);filter:drop-shadow(0 0 6px rgba(255,220,120,.8))}
+.tkfly::after{content:"";position:absolute;left:50%;top:4px;bottom:4px;border-left:2px dashed rgba(120,70,0,.5)}
+.handle{transition:none}
+.handle .knob{position:absolute;left:50%;top:-9px;width:16px;height:16px;margin-left:-8px;border-radius:50%;background:#fff;border:3px solid var(--machine-2);box-shadow:0 2px 4px rgba(0,0,0,.35)}
+.machine.crank .handle{animation:crank 1s cubic-bezier(.3,.1,.3,1)}
+.machine.crank .dome{animation:shake .25s ease-in-out 4}
+.machine.crank .dome .cap{animation:tumble .32s ease-in-out 3;animation-delay:calc(var(--d,0s) / 8)}
+@keyframes crank{0%{transform:rotate(0)}18%{transform:rotate(100deg)}26%{transform:rotate(88deg)}46%{transform:rotate(200deg)}54%{transform:rotate(188deg)}74%{transform:rotate(300deg)}82%{transform:rotate(290deg)}100%{transform:rotate(360deg)}}
+.outlet{overflow:visible}
+.outlet .flap{position:absolute;left:4px;right:4px;top:4px;height:16px;border-radius:6px 6px 2px 2px;background:rgba(255,255,255,.18);transform-origin:50% 0;z-index:2}
+.machine.dropping .flap{animation:flap .5s .2s ease-out}
+@keyframes flap{0%{transform:rotateX(0)}30%{transform:rotateX(-75deg)}100%{transform:rotateX(0)}}
+.body .tray{position:absolute;right:12px;bottom:6px;width:60px;height:14px;border-radius:0 0 12px 12px;background:rgba(0,0,0,.35);box-shadow:inset 0 3px 4px rgba(0,0,0,.5)}
+.outlet .drop{z-index:3}
+.machine.dropping .drop{animation:capdrop .95s cubic-bezier(.3,.1,.4,1) forwards}
+@keyframes capdrop{0%{opacity:0;transform:translateY(-28px) scale(.6) rotate(0)}
+  30%{opacity:1;transform:translateY(34px) scale(1) rotate(80deg)}
+  44%{transform:translateY(18px) rotate(140deg)}54%{transform:translateY(34px) rotate(180deg)}
+  62%{transform:translateY(28px) rotate(200deg)}70%{transform:translateY(34px) rotate(215deg)}
+  100%{opacity:1;transform:translateY(34px) translateX(-6px) rotate(250deg)}}
+.machine.dropping .drop{box-shadow:0 0 0 0 var(--c)}
+.machine.popout .drop{animation:capdrop .01s forwards,popout .26s ease-in forwards}
+@keyframes popout{to{transform:translateY(20px) scale(2.4);opacity:0;filter:brightness(1.8)}}
+body.drawing .pull,body.drawing .gcard{pointer-events:none}
+body.drawing .pulls{opacity:.6}
 </style>
 
 <header class="top" id="hdr" hidden>
@@ -932,7 +966,7 @@ const Sync=(()=>{
   function view(){
     if(S.state==='out')return viewLoginShared(S.mode);
     if(S.state==='error')return `<section class="panel"><div class="card"><h2>開けませんでした</h2><p class="muted">${esc(S.err)}</p><button class="btn" data-act="reload">もう一度開く</button></div></section>`;
-    return `<section class="panel"><div class="card loading"><span class="spin" aria-hidden="true"></span><p class="muted">読み込み中…</p></div></section>`}
+    return `<section class="panel"><div class="card loading"><span class="ldspin" aria-hidden="true"></span><p class="muted">読み込み中…</p></div></section>`}
   function boot(){db=emptyDB();render();
     const go=()=>FBX.onAuth(a=>{
       if(a&&a.email){if(S.email===a.email&&S.state!=='out')return;S.email=a.email.toLowerCase();S.state='loading';S.adminSeen=false;S.isAdmin=false;wipe();render();start()}
@@ -1052,6 +1086,10 @@ const sfx={
   tap:n=>{tone(260+n*140,.14,'triangle',.2);tone(90,.1,'square',.08)},
   open:t=>{const seq=t>=3?[523,659,784,1047,1319,1568]:t===2?[523,659,784,1047]:t===1?[587,784,988]:[659,880];seq.forEach((f,i)=>tone(f,.28,'triangle',.15,i*.085));if(t>=2)[1047,1319,1568].forEach(f=>tone(f,.9,'sine',.05,seq.length*.085))},
   coin:()=>{tone(988,.07,'square',.06);tone(1319,.22,'square',.06,.07)},
+  insert:i=>{tone(1200+i*90,.05,'square',.05);tone(520,.08,'triangle',.08,.04)},
+  click:()=>{tone(1900,.025,'square',.06);tone(240,.04,'square',.07,.01)},
+  thud:()=>{tone(120,.16,'sine',.25,0,60);tone(420,.06,'triangle',.08,.02)},
+  bounce:k=>tone(300-k*40,.07,'sine',.12-k*.03),
   rankup:()=>[523,659,784,1047,784,1047,1319].forEach((f,i)=>tone(f,.2,'square',.06,i*.1)),
   scratch:()=>tone(1800+Math.random()*600,.03,'sawtooth',.015)
 };
@@ -1239,33 +1277,70 @@ function applyDraw(u,g,count,r){
   u.stats.draws+=count;
   return results;
 }
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const reduceMotion=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+// ① チケットが投入口に吸い込まれる
+async function animInsert(m,n){
+  const slot=m.querySelector('.slot'),from=$('#balNum')||$('.pull.hot')||m;
+  const r=m.getBoundingClientRect();if(r.top<60||r.bottom>innerHeight-90){m.scrollIntoView({block:'center',behavior:'smooth'});await sleep(380)}
+  const a=from.getBoundingClientRect(),b=slot.getBoundingClientRect(),k=Math.min(n,6),flies=[];
+  m.classList.add('insert');
+  for(let i=0;i<k;i++){const t=document.createElement('div');t.className='tkfly';document.body.appendChild(t);
+    const sx=a.left+a.width/2-22,sy=a.top+a.height/2-14,dx=b.left+b.width/2-22-sx,dy=b.top+b.height/2-14-sy;
+    t.style.left=sx+'px';t.style.top=sy+'px';
+    const an=t.animate([{transform:'translate(0,0) rotate(-8deg) scale(1)',opacity:1},
+      {transform:`translate(${dx*.55}px,${dy*.35-70}px) rotate(14deg) scale(1.15)`,opacity:1,offset:.5},
+      {transform:`translate(${dx}px,${dy-10}px) rotate(0deg) scale(.9)`,opacity:1,offset:.82},
+      {transform:`translate(${dx}px,${dy+4}px) rotate(0deg) scaleX(.9) scaleY(.08)`,opacity:0}],
+      {duration:620,delay:i*95,easing:'cubic-bezier(.45,0,.35,1)',fill:'forwards'});
+    flies.push(an.finished.then(()=>{t.remove();sfx.insert(i);slot.classList.remove('gulp');void slot.offsetWidth;slot.classList.add('gulp')}).catch(()=>t.remove()))}
+  await Promise.all(flies);await sleep(120);m.classList.remove('insert');
+}
+// ② レバーをガチャガチャ回す
+async function animCrank(m){
+  m.classList.remove('crank');void m.offsetWidth;m.classList.add('crank');sfx.crank();
+  [120,330,560,800].forEach(t=>setTimeout(sfx.click,t));
+  await sleep(1000);m.classList.remove('crank');
+}
+// ③ カプセルがゴトンと出てくる
+async function animDrop(m,color){
+  const d=m.querySelector('.drop');d.style.setProperty('--c',color);
+  m.classList.remove('dropping','popout');void m.offsetWidth;m.classList.add('dropping');
+  setTimeout(sfx.thud,330);setTimeout(()=>sfx.bounce(1),520);setTimeout(()=>sfx.bounce(2),660);
+  await sleep(980);
+  m.classList.add('popout');await sleep(260);
+}
 async function doDraw(count){
   closeModal();
   if(Draw.on)return;
   const g0=G(gsel),u0=cur();if(!g0||!u0)return;const cost=count*g0.cost;
   if(balOf(u0,g0)<cost||gLeft(g0)<count)return;
   if(!canDraw(u0,g0)||(g0.newbieHours&&count>newbieLeft(u0,g0)))return;
-  sfx.crank();const rk0=rankOf(u0.stats.draws).n;
+  const rk0=rankOf(u0.stats.draws).n;
+  const m=$('#machine'),anim=!!m&&!reduceMotion();
+  Draw.on=true;document.body.classList.add('drawing');
+  // 投入のアニメーションと、BOXから引く処理（共有版は通信）を同時に進める
+  const ins=anim?animInsert(m,cost):Promise.resolve();
   let r;
-  if(SHARED){Draw.on=true;const m=$('#machine');m&&m.classList.add('wait');
-    r=undefined;try{r=await Sync.drawTx(g0.id,g=>boxDraw(g,count,u0.name))}catch(e){console.warn(e);r=undefined}
-    Draw.on=false;m&&m.classList.remove('wait');
-    if(!r){toast(r===undefined?'通信できませんでした。もう一度お試しください':'ほかの人が先に引いたため、BOXの残りが足りません');keepScroll(render);return}
-  }else r=boxDraw(g0,count,u0.name);
-  if(!r){keepScroll(render);return}
+  if(SHARED){r=undefined;try{r=await Sync.drawTx(g0.id,g=>boxDraw(g,count,u0.name))}catch(e){console.warn(e);r=undefined}}
+  else r=boxDraw(g0,count,u0.name);
+  await ins;
+  if(!r){Draw.on=false;document.body.classList.remove('drawing');
+    toast(SHARED&&r===undefined?'通信できませんでした。もう一度お試しください':'ほかの人が先に引いたため、BOXの残りが足りません');keepScroll(render);return}
   const g=G(g0.id),u=cur();
   const results=applyDraw(u,g,count,r),lastOne=r.lastOne,boxNo=r.boxNo;
-  save();
+  save();renderHeader();
   const rk1=rankOf(u.stats.draws);if(rk1.n!==rk0)rankUpTo=rk1;
   let bestId=lastOne?'L':results.reduce((a,p)=>p.id<a.id?p:a,results[0]).id;
   if(results.kiri.length&&fxTier(bestId)<2)bestId='K';
-  const m=$('#machine');const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if(m&&!reduce){
-    m.querySelector('.drop').style.setProperty('--c',fxTier(bestId)>=2?rankColor('E'):rankColor(bestId));
-    m.classList.remove('spin');void m.offsetWidth;m.classList.add('spin');
-    setTimeout(()=>playFx(g,results,lastOne,boxNo,bestId),1250);
-  }else showResults(g,results,lastOne,boxNo);
-  renderHeader();
+  if(anim&&document.body.contains(m)){
+    await animCrank(m);
+    // B賞以上はふつうの色で出てきて、開封演出の中で本当の色に変わる
+    await animDrop(m,fxTier(bestId)>=2?rankColor('E'):rankColor(bestId));
+    Draw.on=false;document.body.classList.remove('drawing');
+    playFx(g,results,lastOne,boxNo,bestId);
+    setTimeout(()=>m.classList.remove('dropping','popout'),400);
+  }else{Draw.on=false;document.body.classList.remove('drawing');showResults(g,results,lastOne,boxNo)}
 }
 /* ---------- 抽選演出 ---------- */
 let fx=null;
@@ -2103,7 +2178,7 @@ function viewGacha(u){
       ${g.desc?`<p class="small muted" style="margin:-8px 0 0;align-self:flex-start">${esc(g.desc)}</p>`:''}
       <div class="machine" id="machine">
         <div class="dome">${caps.join('')}</div>
-        <div class="body"><div class="handle" aria-hidden="true"></div><div class="outlet"><span class="drop"></span></div></div>
+        <div class="body"><span class="slot" aria-hidden="true"><i></i></span><div class="handle" aria-hidden="true"><span class="knob"></span></div><div class="outlet"><span class="flap"></span><span class="drop"></span></div><span class="tray" aria-hidden="true"></span></div>
       </div>
       <div class="lastone">${thumb(g.id,'L',48)}<div style="flex:1;min-width:0"><b>ラストワン賞まで</b><div class="small muted">${esc(g.last.name)}</div></div><span class="cnt num">${l.toLocaleString()}</span></div>
       ${(()=>{const ev=g.kiri&&g.kiri.every;if(!ev)return '';const nx=(Math.floor(drawn/ev)+1)*ev;if(nx>=T)return '';
