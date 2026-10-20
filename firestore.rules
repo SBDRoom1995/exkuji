@@ -50,6 +50,11 @@ service cloud.firestore {
       allow read, create: if signedIn();
       allow update, delete: if isAdmin();
     }
+    // 友だち招待の記録（招待コード・日時・名前の頭文字だけ）
+    match /referrals/{id} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.keys().hasOnly(['id','code','at','name','_v']);
+    }
     // アンケートの回答
     match /answers/{id} {
       allow create: if signedIn() && request.resource.data.email == me();

@@ -478,6 +478,21 @@ header.top .wrap{gap:8px}
 .locked b{color:var(--rc)}
 .perks{margin-top:10px}.perks summary{cursor:pointer;font-weight:700;font-size:13px;color:var(--muted)}
 .perk{display:flex;gap:10px;align-items:baseline;padding:6px 0;border-top:1px solid var(--line)}.perk b{color:var(--rc);min-width:4.5em}.perk.me{background:color-mix(in srgb,var(--rc) 10%,transparent);border-radius:8px;padding:6px 8px}
+
+.hitsleft{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.hl{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid var(--line);font-weight:700}
+.hl b{font-size:20px;color:var(--gold)}.hl small{color:var(--muted)}.hl.out{opacity:.45}.hl.out b{color:inherit}
+.aleft{color:var(--gold)}
+.hist summary{cursor:pointer;display:flex;gap:8px;align-items:baseline;list-style:none}.hist summary::-webkit-details-marker{display:none}
+.hrow{display:block;line-height:2}.hrow .tier{vertical-align:middle;margin-right:6px}
+.evbar{display:flex;flex-direction:column;gap:2px;padding:10px 14px;border-radius:14px;background:linear-gradient(90deg,#FF5FA2,#FFD25A,#3D8BFF);color:#111;font-size:13px;box-shadow:0 6px 24px rgba(255,95,162,.35)}
+.evbar b{font-size:14px}
+.invite .refcode{font-family:var(--display);font-size:22px;letter-spacing:.08em;color:var(--gold)}
+.fx.god .fx-rays{background:conic-gradient(from 0deg,#ff5f6d,#ffc371,#fff36b,#7cf29a,#5fd3ff,#a78bfa,#ff5fa2,#ff5f6d)!important;opacity:.55;animation:spin 2.2s linear infinite}
+.fx-god{position:absolute;left:50%;top:14%;translate:-50% 0;z-index:5;display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:none;animation:godpop 2.2s ease-out forwards}
+.fx-god b{font-family:var(--display);font-size:48px;line-height:1;background:linear-gradient(90deg,#ff5f6d,#ffc371,#fff36b,#7cf29a,#5fd3ff,#a78bfa);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 12px rgba(255,255,255,.6))}
+.fx-god span{font-weight:800;color:#fff;text-shadow:0 0 10px #ff5fa2}
+@keyframes godpop{0%{opacity:0;scale:.4}12%{opacity:1;scale:1.25}25%{scale:1}80%{opacity:1}100%{opacity:0;scale:1.05}}
 </style>
 
 <header class="top" id="hdr" hidden>
@@ -583,6 +598,14 @@ const ADD_GACHAS=[
   {id:'cosme',name:'コスメガチャ',tone:'pink',cost:3,desc:'デパコスからプチプラまで',
    prizes:[['デパコス美容液（SK-IIなど）',5,30000,0],['デパコスリップ（Dior・YSLなど）',30,5500,0],['人気のプチプラコスメ',50,1800,0],['デジタルギフト 100円分',415,110,1],['デジタルギフト 10円分',4500,11,1]],
    last:['Dyson ヘアドライヤー',80000,0],kiri:{every:500,name:'コスメギフト券 1,000円分',cost:1100,pt:50,digital:true}},
+  // ④ 新規限定：登録から24時間・1人5回まで。ハズレなし（集客用なので原価は高め）
+  {id:'welcome',newbieHours:24,perUser:5,name:'はじめてガチャ',tone:'green',cost:1,desc:'登録から24時間だけ。全部デジタルギフト',
+   prizes:[['デジタルギフト 1,000円分',5,1020,1],['デジタルギフト 300円分',30,310,1],['デジタルギフト 100円分',200,110,1],['デジタルギフト 50円分',765,55,1]],
+   last:['デジタルギフト 3,000円分',3060,1],kiri:{every:0,name:'',cost:0,pt:0,digital:true}},
+  // ⑥ ジャックポット：前の月に100回以上引いた人がもらえるJPチケットで引く
+  {id:'jackpot',currency:'jp',name:'ジャックポットガチャ',tone:'red',cost:1,desc:'JPチケット専用・当たりが多い特別BOX',
+   prizes:[['デジタルギフト 5,000円分',3,5100,1],['デジタルギフト 1,000円分',20,1020,1],['デジタルギフト 500円分',77,510,1],['デジタルギフト 300円分',200,310,1]],
+   last:['デジタルギフト 10,000円分',10200,1],kiri:{every:0,name:'',cost:0,pt:0,digital:true}},
   // ランク限定ガチャ（引ける人が少ないので1BOX 1,000個）
   {id:'r_silver',minRank:1,name:'グルメガチャ',tone:'red',cost:2,desc:'シルバー以上限定・ごほうびグルメ',
    prizes:[['高級和牛ギフト 1万円分',1,10000,0],['有名店スイーツ詰め合わせ',5,4000,0],['カフェ ドリンクチケット',30,700,1],['デジタルギフト 50円分',164,55,1],['デジタルギフト 10円分',800,11,1]],
@@ -599,7 +622,7 @@ const ADD_GACHAS=[
 ];
 function addPresetGachas(){db.added=db.added||[];let n=0;
   for(const d of ADD_GACHAS){if(db.added.includes(d.id))continue;db.added.push(d.id);
-    if(!G(d.id)){const g=buildGacha({...d,filled:null});if(d.kiri)g.kiri={...d.kiri};if(d.minRank)g.minRank=d.minRank;db.gachas.push(g);n++}}
+    if(!G(d.id)){const g=buildGacha({...d,filled:null});if(d.kiri)g.kiri={...d.kiri};if(d.minRank)g.minRank=d.minRank;if(d.newbieHours){g.newbieHours=d.newbieHours;g.perUser=d.perUser}if(d.currency)g.currency=d.currency;db.gachas.push(g);n++}}
   return n}
 const PT_PER_TICKET=10;
 const PACKS=[{n:10,bonus:0,yen:1000},{n:30,bonus:3,yen:3000},{n:50,bonus:10,yen:5000}];
@@ -698,7 +721,7 @@ const Sync=(()=>{
   function rehydrate(g){if(S.isAdmin&&g.next&&g.next.prizes)g.next.prizes.forEach(p=>{if(!p.id)p.id='N'+uid()});const s=(p,rk)=>{if(!p||p.img)return;if(p.autoImg)p.autoImg=false;syncGift(p,rk)};
     (g.prizes||[]).forEach(p=>s(p,p.id));s(g.last,'L');if(g.kiri&&g.kiri.every)s(g.kiri,'K');
     if(g.next){(g.next.prizes||[]).forEach((p,i)=>s(p,String.fromCharCode(65+i)));s(g.next.last,'L')}}
-  const ARR=['subs','requests','winners','answers'];
+  const ARR=['subs','requests','winners','answers','referrals'];
   function unitOf(k){const i=k.indexOf('/'),c=k.slice(0,i),id=k.slice(i+1);
     if(c==='users')return db.users[id]&&(id===S.email||S.isAdmin)?db.users[id]:null;
     if(c==='gachas'){const n=db.gachas.findIndex(g=>g.id===id);return n<0?null:{...stripG(db.gachas[n]),ord:n}}
@@ -752,7 +775,10 @@ const Sync=(()=>{
     inflight[k]=true;base[k]=s;
     const p=isNew?(()=>{const d={...sent,_v:1};return FBX.set(k,d).then(()=>d)})()
       :FBX.tx(k,sv=>{const m=sv?merge3(sv,b,sent):{...sent};m._v=((sv&&sv._v)||0)+1;return m});
-    p.then(res=>done(k,res,sent)).catch(e=>{inflight[k]=false;if(isNew)delete base[k];else base[k]=J(b);fail(e);setTimeout(push,5000)});
+    p.then(res=>done(k,res,sent)).catch(e=>{inflight[k]=false;if(isNew)delete base[k];else base[k]=J(b);fail(e);
+      // 権限がない書き込みは、くり返さずに元へ戻す
+      if(/permission/i.test((e&&(e.code||e.message))||'')){if(isNew)removeUnit(k);else applyUnit(k,b);changed();return}
+      setTimeout(push,5000)});
   }
   function done(k,res,sent){inflight[k]=false;if(!res)return;
     const m0=noV(res);base[k]=J(m0);ver[k]=res._v||ver[k]||0;
@@ -777,7 +803,7 @@ const Sync=(()=>{
   function changed(){if(S.state!=='ready')return;if(S.isAdmin&&db.gachas.length&&ADD_GACHAS.some(d=>!(db.added||[]).includes(d.id))&&'config/main' in base){if(addPresetGachas()){syncAllGifts();push()}else push()}clearTimeout(renderT);renderT=setTimeout(flush,150)}
   function flush(){if(busy()){renderHeader();clearTimeout(renderWait);renderWait=setTimeout(flush,900);return}keepScroll(render)}
   // 読み込み
-  const NEED=['admins','gachas','main','me','winners','subs','requests'];
+  const NEED=['admins','gachas','main','me','winners','subs','requests','refs'];
   function mark(t){got.add(t);if(S.state==='loading'&&NEED.every(x=>got.has(x)))finishBoot()}
   function L(u){unsubs.push(u)}
   function start(){stopAll();got.clear();
@@ -788,6 +814,7 @@ const Sync=(()=>{
     L(FBX.watchDoc('config/main',d=>{onRemote('config/main',d);mark('main')},fail));
     L(FBX.watchDoc('users/'+S.email,d=>{onRemote('users/'+S.email,d);mark('me')},fail));
     L(FBX.watchCol('winners',{order:'at',limit:50},list=>onList('winners',list,'winners'),fail));
+    L(FBX.watchCol('referrals',{eq:['code',refCodeOf(S.email)]},list=>onList('referrals',list,'refs'),fail));
   }
   // 自分だけ見られるもの／管理者は全員分
   function scope(){scopeUnsubs.forEach(u=>{try{u()}catch(e){}});scopeUnsubs=[];
@@ -798,7 +825,7 @@ const Sync=(()=>{
     scopeUnsubs.push(FBX.watchCol('requests',own,list=>onList('requests',list,'requests'),fail));
   }
   function stopAll(){[...unsubs,...scopeUnsubs].forEach(u=>{try{u()}catch(e){}});unsubs=[];scopeUnsubs=[];S.scoped=false}
-  function emptyDB(){return {users:{},session:null,gachas:[],requests:[],subs:[],winners:[],answers:[],cases:[],settings:{shipPt:80,freePt:300,target:50},dayOffset:0,lastRoll:null,rollLog:[]}}
+  function emptyDB(){return {users:{},session:null,gachas:[],requests:[],subs:[],winners:[],answers:[],referrals:[],cases:[],settings:{shipPt:80,freePt:300,target:50},dayOffset:0,lastRoll:null,rollLog:[]}}
   function wipe(){for(const k in base)delete base[k];for(const k in ver)delete ver[k];db=emptyDB()}
   function finishBoot(){
     // 最初の管理者が、ガチャの初期データを用意する
@@ -809,7 +836,7 @@ const Sync=(()=>{
     let u=db.users[S.email],isNew=false;
     if(!u){const p=S.pending||{};isNew=true;
       u=db.users[S.email]=makeUser(p.name||S.email.split('@')[0],S.email,now());addTickets(u,3,'新規登録ボーナス');
-      u.consent=p.consent||{terms:now(),share:null}}
+      u.consent=p.consent||{terms:now(),share:null};if(applyRefOnSignup(u,p.ref))setTimeout(()=>toast(`招待コード特典：チケット${REF.newbie}枚`),2600)}
     u.consent=u.consent||{terms:null,share:null};u.caseConsents=u.caseConsents||{};
     touchLogin(u);S.pending=null;db.session=S.email;S.state='ready';
     if(!S.isAdmin&&tab==='admin')tab='gacha';
@@ -840,7 +867,7 @@ const Sync=(()=>{
       if(S.mode==='signup'){const n=$('#lg-name').value.trim();
         if(!n){setErr('ニックネームを入力してください。');if(btn){btn.disabled=false;btn.textContent='登録してはじめる'}return}
         if(!$('#lg-agree').checked){setErr('利用規約とプライバシーポリシーへの同意が必要です。');if(btn){btn.disabled=false;btn.textContent='登録してはじめる'}return}
-        S.pending={name:n,consent:{terms:Date.now(),share:$('#lg-share').checked?Date.now():null}};
+        S.pending={name:n,ref:($('#lg-ref')||{}).value||'',consent:{terms:Date.now(),share:$('#lg-share').checked?Date.now():null}};
         await FBX.signUp(m,pw)}
       else await FBX.signIn(m,pw);
     }catch(e){S.pending=null;setErr(authMsg(e));if(btn){btn.disabled=false;btn.textContent=S.mode==='signup'?'登録してはじめる':'ログイン'}}
@@ -908,7 +935,7 @@ function sampleImg(head,sub){
     g.font='14px sans-serif';g.fillStyle='#5B6C7E';g.fillText(sub,120,260);g.fillText('受付番号 '+Math.floor(Math.random()*900000+100000),120,284);
     return cv.toDataURL('image/jpeg',.7)}catch(e){return ''}
 }
-function resetBox(g){g.remaining={};g.prizes.forEach(p=>g.remaining[p.id]=p.count)}
+function resetBox(g){g.hits=[];g.remaining={};g.prizes.forEach(p=>g.remaining[p.id]=p.count)}
 
 /* ---------- helpers ---------- */
 const $=s=>document.querySelector(s);
@@ -985,17 +1012,43 @@ const perkOf=u=>PERKS[rankIdx(u)];
 function perkLines(i){const p=PERKS[i],a=[];
   if(p.scr>1)a.push(`スクラッチ ${p.scr}pt以上`);if(p.ship<1)a.push(p.ship?'送料半額':'送料無料');if(p.conv)a.push(`ポイント変換 +${p.conv}%`);if(p.monthly)a.push(`毎月1日にチケット${p.monthly}枚`);
   const lim=i?db.gachas.filter(g=>(g.minRank||0)===i&&g.status!=='draft').map(g=>g.name):[];if(lim.length)a.push(lim.join('・')+'が引ける');return a}
-const canDraw=(u,g)=>rankIdx(u)>=(g.minRank||0);
+const canDraw=(u,g)=>rankIdx(u)>=(g.minRank||0)&&newbieLeft(u,g)!==0;
+// ④ 新規限定ガチャ：登録から◯時間・1人◯回まで
+const usedIn=(u,g)=>((u&&u.gcount)||{})[g.id]||0;
+function newbieLeft(u,g){if(!g.newbieHours)return -1;if(!u)return 0;if(now()-u.created>g.newbieHours*3600000)return 0;return Math.max(0,(g.perUser||5)-usedIn(u,g))}
+const visibleFor=(u,g)=>!g.newbieHours||newbieLeft(u,g)>0;
+function newbieClock(u,g){const ms=u.created+g.newbieHours*3600000-now();const h=Math.floor(ms/3600000),m=Math.floor(ms%3600000/60000);return h>0?`あと${h}時間${m}分`:`あと${m}分`}
+// ⑥ ジャックポットチケットで引くガチャ
+const isJP=g=>g&&g.currency==='jp';
+const balOf=(u,g)=>isJP(g)?(u.jp||0):u.tickets;
+const tkName=g=>isJP(g)?'JPチケット':'チケット';
+// ⑦ 期間限定イベント（管理画面で設定）
+function activeEvent(){const e=settings().event;if(!e||!e.end)return null;const t=today();return (!e.start||e.start<=t)&&t<=e.end?e:null}
+function eventBar(){const e=activeEvent();if(!e)return '';const a=[];if(e.conv>1)a.push(`ポイント変換 ${e.conv}倍`);if(e.scr>1)a.push(`スクラッチ ${e.scr}倍`);
+  return `<div class="evbar"><b>🎉 ${esc(e.name||'イベント開催中')}</b><span>${a.join('・')}（${e.end.slice(5).replace('-','/')}まで）</span></div>`}
+// ③ 友だち招待
+const REF={newbie:5,inviter:5,cap:30};
+const fnv=t=>{let h=2166136261;for(const c of String(t)){h^=c.charCodeAt(0);h=Math.imul(h,16777619)>>>0}return h};
+const refCodeOf=e=>'EX'+fnv(e).toString(36).toUpperCase().padStart(6,'0').slice(-6);
+const refFromUrl=()=>{try{return (new URLSearchParams(location.search).get('ref')||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,10)}catch(e){return ''}};
+function applyRefOnSignup(u,code){code=(code||'').toUpperCase().replace(/[^A-Z0-9]/g,'');if(!code||code===refCodeOf(u.email))return false;
+  u.referredBy=code;addTickets(u,REF.newbie,'招待コード特典');(db.referrals=db.referrals||[]).push({id:uid()+uid(),code,at:now(),name:maskName(u.name)});return true}
+function claimReferrals(u){if(!u)return;const my=refCodeOf(u.email),got=u.refClaimed||[];
+  const nw=(db.referrals||[]).filter(r=>r.code===my&&!got.includes(r.id)).slice(0,Math.max(0,REF.cap-got.length));if(!nw.length)return;
+  u.refClaimed=[...got,...nw.map(r=>r.id)];addTickets(u,REF.inviter*nw.length,`友だち招待 ${nw.length}人`);save();
+  setTimeout(()=>toast(`友だち招待の特典：チケット${REF.inviter*nw.length}枚を受け取りました`),400)}
 // 毎月1日：ランクに応じたチケット（その月に初めて開いたとき）
 let perkToast='';
 function monthlyPerk(u){const mk=monthKey(now());if(u.monthlyClaimed===mk)return;u.monthlyClaimed=mk;
-  const r=rankOf(u.stats.draws),n=perkOf(u).monthly;if(n){addTickets(u,n,`${r.n}特典（${+mk.slice(5)}月分）`);perkToast=`${r.n}特典：今月のチケット${n}枚を受け取りました`}}
+  const r=rankOf(u.stats.draws),n=perkOf(u).monthly;if(n){addTickets(u,n,`${r.n}特典（${+mk.slice(5)}月分）`);perkToast=`${r.n}特典：今月のチケット${n}枚を受け取りました`}
+  const d=new Date(now());const pm=monthKey(new Date(d.getFullYear(),d.getMonth()-1,1).getTime());const pd=(u.monthDraws||{})[pm]||0;
+  const jp=pd>=1000?3:pd>=300?2:pd>=100?1:0;if(jp){u.jp=(u.jp||0)+jp;perkToast=(perkToast?perkToast+'／':'')+`先月${pd}回引いた特典：ジャックポットチケット${jp}枚`}}
 let rankUpTo=null;
 /* ---------- 毎日のスクラッチ（平均約2pt＝これまでのデイリーログインと同じ） ---------- */
 const SCRATCH=[[1,70],[2,20],[5,8],[30,2]];
 function openScratch(){
   const u=cur();
-  if(u.scratchPending==null){if(u.dailyClaimed===today())return;let r=rnd(100),v=1;for(const [p,w] of SCRATCH){if(r<w){v=p;break}r-=w}v=Math.max(v,perkOf(u).scr);u.dailyClaimed=today();u.scratchPending=v;save()}
+  if(u.scratchPending==null){if(u.dailyClaimed===today())return;let r=rnd(100),v=1;for(const [p,w] of SCRATCH){if(r<w){v=p;break}r-=w}v=Math.max(v,perkOf(u).scr);if(activeEvent())v=Math.round(v*(activeEvent().scr||1));u.dailyClaimed=today();u.scratchPending=v;save()}
   const v=u.scratchPending;
   openModal(`<h3>今日のスクラッチ</h3><p class="small muted">銀色のところを指でけずってください</p>
     <div class="scratch"><div class="scr-prize ${v>=5?'big':''}"><b class="display">+${v}pt</b><span>${v>=30?'大当たり！':v>=5?'当たり！':'デイリーボーナス'}</span></div><canvas id="scr" width="600" height="320"></canvas></div>
@@ -1077,6 +1130,7 @@ function signIn(name,email,agree,share){
     if(!agree){$('#lgErr').textContent='はじめての方は、利用規約とプライバシーポリシーへの同意が必要です。';return}
     isNew=true;u=db.users[email]=makeUser(name.trim(),email,now());addTickets(u,3,'新規登録ボーナス');
     u.consent={terms:now(),share:share?now():null};
+    if(applyRefOnSignup(u,($('#lg-ref')||{}).value))setTimeout(()=>toast(`招待コード特典：チケット${REF.newbie}枚`),2600);
   }
   u.consent=u.consent||{terms:null,share:null};u.caseConsents=u.caseConsents||{};
   touchLogin(u);
@@ -1090,10 +1144,14 @@ function drawOne(g){
   for(const p of g.prizes){const n=g.remaining[p.id]||0;if(r<n){g.remaining[p.id]--;return p}r-=n}
 }
 function askDraw(n){
-  if(!canDraw(cur(),G(gsel))){toast(RANKS[G(gsel).minRank].n+'ランク以上の限定ガチャです');return}
+  const g0=G(gsel),u0=cur();
+  if(g0.newbieHours&&newbieLeft(u0,g0)<=0){toast('この新規限定ガチャはもう引けません');return}
+  if(!canDraw(u0,g0)){toast(RANKS[g0.minRank].n+'ランク以上の限定ガチャです');return}
+  if(g0.newbieHours)n=Math.min(n,newbieLeft(u0,g0));
   const g=G(gsel),u=cur(),l=gLeft(g),count=Math.min(n,l),cost=count*g.cost;
   if(!count)return;
-  if(u.tickets<cost){
+  if(isJP(g)&&(u.jp||0)<cost){toast(`ジャックポットチケットが足りません（所持${u.jp||0}枚）`);return}
+  if(u.tickets<cost&&!isJP(g)){
     const rs=u.consent&&u.consent.share?recos(u,3):[];
     openModal(`<h3>チケットが足りません</h3><p>${esc(g.name)}を${count}回引くにはチケットが${cost}枚必要です（所持 ${u.tickets}枚）。</p>
       ${rs.length?`<div><b class="small">この案件でチケットが増やせます</b><div class="list">${rs.map(recoRow).join('')}</div></div>`:u.consent&&u.consent.share?'':`<p class="note">取引先への情報提供に同意すると、ポイントがもらえる案件が表示されます。</p>`}
@@ -1101,21 +1159,23 @@ function askDraw(n){
   }
   if(n===1){doDraw(1);return}
   const capped=count<n?`<p class="note">BOXの残りが${l}個のため、${count}回で引き切りになります。最後の1個を引くとラストワン賞も獲得できます。</p>`:'';
-  openModal(`<h3>${esc(g.name)}を${count}回引きますか？</h3><p>チケットを <b class="num">${cost}枚</b> 使います。残り ${u.tickets-cost}枚になります。</p>${capped}
+  openModal(`<h3>${esc(g.name)}を${count}回引きますか？</h3><p>${tkName(g)}を <b class="num">${cost}枚</b> 使います。残り ${balOf(u,g)-cost}枚になります。</p>${capped}
     <div class="row"><button class="btn ghost" data-act="close">やめる</button><span class="spacer"></span><button class="btn" data-act="confirmDraw" data-n="${count}">${count}回引く</button></div>`);
 }
 // BOXから引く（BOXだけを変える。共有版ではサーバー上で順番に実行される）
 function boxDraw(g,count,name){
   if(gLeft(g)<count)return null;
   const T0=gTotal(g),ev=g.kiri&&g.kiri.every>0?g.kiri.every:0,boxNo=g.no,picks=[];
-  for(let i=0;i<count;i++){const p=drawOne(g);const nth=T0-gLeft(g);picks.push({pid:p.id,kiri:ev&&nth%ev===0&&nth<T0?nth:0})}
+  for(let i=0;i<count;i++){const p=drawOne(g);const nth=T0-gLeft(g);picks.push({pid:p.id,kiri:ev&&nth%ev===0&&nth<T0?nth:0});if(p.id==='A'||p.id==='B')(g.hits=g.hits||[]).push({pid:p.id,nth})}
   let lastOne=false;
-  if(gLeft(g)===0){lastOne=true;g.history.unshift({no:g.no,winner:name,at:now()});g.no++;resetBox(g)}
+  if(gLeft(g)===0){lastOne=true;g.history.unshift({no:g.no,winner:name,at:now(),hits:g.hits||[]});g.history=g.history.slice(0,20);g.no++;resetBox(g)}
   return {picks,lastOne,boxNo};
 }
 // 引いた結果を会員に反映する
 function applyDraw(u,g,count,r){
-  addTickets(u,-count*g.cost,`${g.name} ${count}回（BOX #${r.boxNo}）`);
+  if(isJP(g))u.jp=(u.jp||0)-count*g.cost;else addTickets(u,-count*g.cost,`${g.name} ${count}回（BOX #${r.boxNo}）`);
+  (u.gcount=u.gcount||{})[g.id]=(u.gcount[g.id]||0)+count;
+  const mk=monthKey(now());u.monthDraws=u.monthDraws||{};u.monthDraws[mk]=(u.monthDraws[mk]||0)+count;for(const k of Object.keys(u.monthDraws))if(k<monthKey(now()-100*86400000))delete u.monthDraws[k];
   const results=[];results.kiri=[];
   for(const x of r.picks){const p=g.prizes.find(q=>q.id===x.pid)||{id:x.pid,name:'-'};results.push(p);
     u.prizes.unshift({uid:uid(),gid:g.id,pid:p.id,box:r.boxNo,at:now(),status:'held'});if(p.id<='C')addWinner(u,g.id,p.id);
@@ -1128,7 +1188,8 @@ async function doDraw(count){
   closeModal();
   if(Draw.on)return;
   const g0=G(gsel),u0=cur();if(!g0||!u0)return;const cost=count*g0.cost;
-  if(u0.tickets<cost||gLeft(g0)<count)return;
+  if(balOf(u0,g0)<cost||gLeft(g0)<count)return;
+  if(!canDraw(u0,g0)||(g0.newbieHours&&count>newbieLeft(u0,g0)))return;
   sfx.crank();const rk0=rankOf(u0.stats.draws).n;
   let r;
   if(SHARED){Draw.on=true;const m=$('#machine');m&&m.classList.add('wait');
@@ -1170,6 +1231,8 @@ function playFx(g,results,lastOne,boxNo,bestId){
     <div class="fx-tap"><b>タップで開ける！</b><span>あと<em>3</em>回</span></div>
     <div class="fx-label">${head?`<div class="fx-head">${head}</div>`:''}<div class="fx-prize">${p.img?`<img src="${p.img}" alt="">`:`<span class="fx-dot">${bestId==='L'?'1':bestId==='K'?'★':bestId}</span>`}<div><div class="fx-rank">${bestId==='L'?'ラストワン賞':bestId==='K'?'キリ番賞':bestId+'賞'}</div><div class="fx-name">${esc(p.name)}</div></div></div>${n>1?`<div class="fx-more">ほか ${n-1}個の結果はこのあと</div>`:''}</div>
     <div class="fx-hint">タップで結果へ</div>`;
+  const god=tier>=2&&Math.random()<.35;
+  if(god){root.classList.add('god');root.insertAdjacentHTML('beforeend','<div class="fx-god"><b>激アツ</b><span>当たり確定！</span></div>');setTimeout(()=>{try{sfx.promo()}catch(e){}},250)}
   document.body.appendChild(root);
   let stage='intro',taps=0;
   const done=()=>{if(!fx||fx.root!==root)return;['t1','t2','t3','t4','t5'].forEach(k=>clearTimeout(fx[k]));cancelAnimationFrame(fx.raf);fx=null;root.classList.add('out');setTimeout(()=>root.remove(),250);showResults(g,results,lastOne,boxNo)};
@@ -1411,17 +1474,18 @@ function ship(rid){
 function askToPoints(){
   const items=selItems();
   if(!items.length){toast('ポイントにする景品を選んでください');return}
-  const groups=groupCount(items);const base=groups.reduce((s,x)=>s+prizeOf(x.gid,x.pid).pt*x.n,0),pc=perkOf(cur()).conv,bonus=Math.floor(base*pc/100),sum=base+bonus;
+  const groups=groupCount(items);const base=groups.reduce((s,x)=>s+prizeOf(x.gid,x.pid).pt*x.n,0),pc=perkOf(cur()).conv,bonus=Math.floor(base*pc/100),ev=activeEvent(),evb=ev&&ev.conv>1?Math.floor((base+bonus)*(ev.conv-1)):0,sum=base+bonus+evb;
   openModal(`<h3>景品をポイントに変換</h3>
     <div class="list">${groups.map(x=>{const p=prizeOf(x.gid,x.pid);return `<div class="item">${tierDot(x.pid)}<div class="t"><b style="font-weight:500">${esc(p.name)}</b><span class="small muted">${esc(G(x.gid)?.name||'')}・${p.pt}pt × ${x.n}</span></div><span class="num">${p.pt*x.n}pt</span></div>`}).join('')}</div>
     ${bonus?`<div class="row"><span class="muted">${rankOf(cur().stats.draws).n}特典 +${pc}%</span><span class="spacer"></span><span class="num">+${bonus}pt</span></div>`:''}
+    ${evb?`<div class="row"><span class="muted">${esc(ev.name||'イベント')} ${ev.conv}倍</span><span class="spacer"></span><span class="num">+${evb}pt</span></div>`:''}
     <div class="row"><b>合計</b><span class="spacer"></span><span class="display num" style="font-size:24px;color:var(--green)">+${sum}pt</span></div>
     <p class="note">変換した景品は元に戻せません。${PT_PER_TICKET}ptでチケット1枚に交換できます。</p>
     <div class="row"><button class="btn ghost" data-act="close">やめる</button><span class="spacer"></span><button class="btn green" data-act="toPoints">変換する</button></div>`);
 }
 function toPoints(){
   const u=cur();const items=selItems();
-  const base=items.reduce((s,p)=>s+prizeOf(p.gid,p.pid).pt,0),sum=base+Math.floor(base*perkOf(u).conv/100);
+  const base=items.reduce((s,p)=>s+prizeOf(p.gid,p.pid).pt,0),b1=base+Math.floor(base*perkOf(u).conv/100),ev=activeEvent(),sum=b1+(ev&&ev.conv>1?Math.floor(b1*(ev.conv-1)):0);
   items.forEach(p=>p.status='pt');addPoints(u,sum,`景品${items.length}個を変換`);
   selected.clear();save();closeModal();render();toast(`+${sum}pt 変換しました`);
 }
@@ -1728,6 +1792,7 @@ function hasClaimable(u){return u.dailyClaimed!==today()||u.scratchPending!=null
 function render(){
   if(SHARED&&Sync.state()!=='ready'){renderHeader();$('#app').innerHTML=Sync.view()+footerHTML();return}
   if(db){const n=rollover();if(n)setTimeout(()=>toast(`${new Date(now()).getMonth()+1}月の景品に入れ替えました（${n}件）`),50)}
+  if(cur())claimReferrals(cur());
   renderHeader();
   const u=cur();const app=$('#app');
   if(!u){app.innerHTML=viewLogin()+footerHTML();return}
@@ -1784,6 +1849,7 @@ function viewLogin(){
         <label class="f">ニックネーム<input id="lg-name" autocomplete="nickname" value="デモ太郎" required></label>
         <label class="f">メールアドレス<input id="lg-mail" type="email" autocomplete="email" value="demo@example.com" required></label>
         <label class="f">パスワード<input id="lg-pass" type="password" autocomplete="current-password" value="demodemo"></label>
+        <label class="f">招待コード（お持ちの方）<input id="lg-ref" autocapitalize="characters" value="${esc(refFromUrl())}"></label>
         <div class="consent">
           <label class="check small"><input type="checkbox" id="lg-agree"><span><a href="#" data-act="terms">利用規約</a>と<a href="#" data-act="policy">プライバシーポリシー</a>に同意します（必須）</span></label>
           <label class="check small"><input type="checkbox" id="lg-share"><span>アンケートや案件に参加したとき、回答内容・属性情報（性別、年代、都道府県など）・メールアドレス・登録IDを、その案件の依頼元企業に提供することに同意します（任意）。氏名・住所・電話番号は提供しません。提供先は各案件の画面でお知らせします。</span></label>
@@ -1807,6 +1873,7 @@ function viewLoginShared(mode){
         ${su?'<label class="f">ニックネーム<input id="lg-name" autocomplete="nickname" maxlength="20" required></label><p class="small muted" style="margin-top:-6px">当選者速報には先頭の1文字だけ表示されます。</p>':''}
         <label class="f">メールアドレス<input id="lg-mail" type="email" autocomplete="email" inputmode="email" required></label>
         <label class="f">パスワード（6文字以上）<input id="lg-pass" type="password" autocomplete="${su?'new-password':'current-password'}" minlength="6" required></label>
+        ${su?`<label class="f">招待コード（お持ちの方）<input id="lg-ref" autocapitalize="characters" value="${esc(refFromUrl())}" placeholder="EX〇〇〇〇〇〇"></label>`:''}
         ${su?`<div class="consent">
           <label class="check small"><input type="checkbox" id="lg-agree"><span><a href="#" data-act="terms">利用規約</a>と<a href="#" data-act="policy">プライバシーポリシー</a>に同意します（必須）</span></label>
           <label class="check small"><input type="checkbox" id="lg-share"><span>アンケートや案件に参加したとき、回答内容・属性情報（性別、年代、都道府県など）・メールアドレス・登録IDを、その案件の依頼元企業に提供することに同意します（任意）。氏名・住所・電話番号は提供しません。</span></label>
@@ -1818,10 +1885,23 @@ function viewLoginShared(mode){
   </section>`;
 }
 
+
+// ① 上位賞の残り（A賞・B賞・ラストワン）
+function hitsLeftHTML(g){const ids=['A','B'].filter(id=>g.prizes.some(p=>p.id===id));if(!ids.length)return '';
+  return `<div class="hitsleft">${ids.map(id=>{const r=g.remaining[id]||0,p=g.prizes.find(x=>x.id===id);return `<span class="hl ${r?'':'out'}">${tierDot(id,20)}<span>${id}賞 残り</span><b class="num">${r}</b><small>/${p.count}</small></span>`}).join('')}</div>`}
+// ② 排出履歴
+function histHTML(g){const cur=(g.hits||[]).slice().sort((a,b)=>a.nth-b.nth),prev=g.history[0];
+  if(!cur.length&&!prev)return '';
+  const fmt=hs=>{const by={};hs.forEach(h=>(by[h.pid]=by[h.pid]||[]).push(h.nth));return Object.keys(by).sort().map(id=>`${tierDot(id,18)}<span>${by[id].map(n=>n.toLocaleString()+'回目').join('、')}</span>`).join('<br>')};
+  return `<div class="card"><details class="hist"><summary><b>排出履歴</b><span class="small muted">当たりが何回目に出たか</span></summary>
+    <div class="small" style="margin-top:8px"><b>いまのBOX #${g.no}</b><div class="hrow">${cur.length?fmt(cur):'<span class="muted">まだA賞・B賞は出ていません</span>'}</div></div>
+    ${g.history.slice(0,3).map(h=>`<div class="small" style="margin-top:8px"><b>BOX #${h.no}（完了）</b><div class="hrow">${h.hits&&h.hits.length?fmt(h.hits):''}${h.hits&&h.hits.length?'<br>':''}${tierDot('L',18)}<span>ラストワン：${esc(maskName(h.winner))}さん</span></div></div>`).join('')}
+    <p class="small muted" style="margin-top:8px">BOXの何回目に当たりが出たかを公開しています。</p></details></div>`}
 function viewGacha(u){
-  const gs=live();
+  const gs=live().filter(x=>visibleFor(u,x)).sort((a,b)=>(b.newbieHours?1:0)-(a.newbieHours?1:0));
   if(!gs.length)return `<section class="panel"><div class="card"><h2>公開中のガチャはありません</h2><p class="muted">管理画面でガチャに景品を追加すると公開されます。</p></div></section>`;
-  const g=G(gsel),T=gTotal(g),l=gLeft(g),drawn=T-l;
+  const nb=gs.find(x=>x.newbieHours);if(nb&&!Draw.nbShown){Draw.nbShown=true;gsel=nb.id}
+  const g=gs.find(x=>x.id===gsel)||gs[0];gsel=g.id;const T=gTotal(g),l=gLeft(g),drawn=T-l;
   const caps=[];const shown=Math.max(l?1:0,Math.round(l/T*26));
   const pool=[];g.prizes.forEach(p=>{const n=Math.min(g.remaining[p.id]||0,400);for(let i=0;i<n;i++)pool.push(rankColor(p.id))});
   for(let i=0;i<shown&&pool.length;i++){
@@ -1832,13 +1912,14 @@ function viewGacha(u){
   const last=g.history[0];
   return `<section class="panel">
     ${installHTML()}
+    ${eventBar()}
     ${tickerHTML()}
     ${bannerHTML(u)}
     <div class="gsel" role="tablist" aria-label="ガチャを選ぶ">${gs.map(x=>{const xl=gLeft(x),xt=gTotal(x);return `<button type="button" role="tab" class="gcard" aria-selected="${x.id===g.id}" data-act="pickG" data-g="${x.id}" style="${toneVars(x)}">
       ${(()=>{const im=prizeOf(x.id,'A').img;return im?`<img class="gimg" src="${im}" alt="">`:`<span class="gimg ph" style="--c:${rankColor('A')}">A</span>`})()}<span class="gtop"><span class="gdot"></span><b>${esc(x.name)}</b></span>
-      ${x.minRank?`<span class="lockb" style="--rc:${RANKS[x.minRank].c}">${canDraw(u,x)?'':'🔒'}${RANKS[x.minRank].n}以上</span>`:''}<span class="small muted">1回 チケット${x.cost}枚${x.next&&x.next.end?'・<b style="color:var(--danger)">まもなく終了</b>':hasChange(x)?'・<b style="color:var(--warn)">'+nfLabel()+'入替</b>':''}</span>
+      ${x.newbieHours?`<span class="lockb" style="--rc:#7CF29A">新規限定 ${newbieClock(u,x)}</span>`:''}${isJP(x)?`<span class="lockb" style="--rc:#FFD25A">JPチケット ${u.jp||0}枚</span>`:''}${x.minRank?`<span class="lockb" style="--rc:${RANKS[x.minRank].c}">${canDraw(u,x)?'':'🔒'}${RANKS[x.minRank].n}以上</span>`:''}<span class="small muted">1回 チケット${x.cost}枚${x.next&&x.next.end?'・<b style="color:var(--danger)">まもなく終了</b>':hasChange(x)?'・<b style="color:var(--warn)">'+nfLabel()+'入替</b>':''}</span>
       <span class="gbar"><i style="width:${(xt-xl)/xt*100}%"></i></span>
-      <span class="small muted num">残り ${xl.toLocaleString()}</span></button>`}).join('')}</div>
+      <span class="small muted num">残り ${xl.toLocaleString()}${(x.remaining.A||0)?`・<b class="aleft">A賞あと${x.remaining.A}</b>`:''}</span></button>`}).join('')}</div>
     ${gheroHTML(g)}
     <div class="notice">${g.next&&g.next.end?`このガチャは <b>${endLabel()}</b> で終了します。`:hasChange(g)?`<b>${nfLabel()}</b> から景品が新しくなります。今のBOXは${endLabel()}までです。`:`毎月1日に景品を入れ替えています。次回は${nfLabel()}（あと${daysToNext()}日）。`}${(g.next&&(g.next.end||hasChange(g)))?'<br><span style="font-weight:500">期間内に引き切られなかった場合、ラストワン賞は出ません。</span>':''}</div>
     <div class="stage" style="${toneVars(g)}">
@@ -1851,11 +1932,13 @@ function viewGacha(u){
       <div class="lastone">${thumb(g.id,'L',48)}<div style="flex:1;min-width:0"><b>ラストワン賞まで</b><div class="small muted">${esc(g.last.name)}</div></div><span class="cnt num">${l.toLocaleString()}</span></div>
       ${(()=>{const ev=g.kiri&&g.kiri.every;if(!ev)return '';const nx=(Math.floor(drawn/ev)+1)*ev;if(nx>=T)return '';
         return `<div class="lastone kiri">${thumb(g.id,'K',48)}<div style="flex:1;min-width:0"><b>${nx.toLocaleString()}回目のキリ番賞まで</b><div class="small muted">${esc(g.kiri.name)}・${ev}回ごとに出ます</div></div><span class="cnt num">${(nx-drawn).toLocaleString()}</span></div>`})()}
+      ${hitsLeftHTML(g)}
       <div class="progress"><div class="bar"><i style="width:${drawn/T*100}%;background:var(--machine)"></i></div><div class="small muted num" style="margin-top:4px;text-align:right">${drawn.toLocaleString()} / ${T.toLocaleString()} 個 排出済</div></div>
       ${canDraw(u,g)?`<div class="pulls">
-        ${[1,10,100].map(n=>`<button class="pull ${n===10?'hot':''}" data-act="draw" data-n="${n}"><span class="display">${n}回</span><small>チケット${Math.min(n,l)*g.cost}枚</small></button>`).join('')}
-      </div>`:`<div class="locked" style="--rc:${RANKS[g.minRank].c}"><b>🔒 ${RANKS[g.minRank].n}ランク以上の限定ガチャ</b><span class="small">あと${RANKS[g.minRank].min-u.stats.draws}回ガチャを引くと${RANKS[g.minRank].n}になって引けるようになります</span></div>`}
+        ${(g.newbieHours?[...new Set([1,newbieLeft(u,g)])]:isJP(g)?[1,10]:[1,10,100]).map(n=>`<button class="pull ${n>1&&(n===10||g.newbieHours)?'hot':''}" data-act="draw" data-n="${n}"><span class="display">${g.newbieHours&&n>1?'残り'+n+'回':n+'回'}</span><small>${tkName(g)}${Math.min(n,l)*g.cost}枚</small></button>`).join('')}
+      </div>${g.newbieHours?`<p class="small" style="text-align:center;color:#7CF29A;margin:0">登録から24時間限定・1人${g.perUser||5}回まで（${newbieClock(u,g)}・残り${newbieLeft(u,g)}回）</p>`:''}${isJP(g)?`<p class="small" style="text-align:center;margin:0">ジャックポットチケット所持 <b>${u.jp||0}枚</b>（前の月に100回以上引くと、毎月1日にもらえます）</p>`:''}`:`<div class="locked" style="--rc:${RANKS[g.minRank].c}"><b>🔒 ${RANKS[g.minRank].n}ランク以上の限定ガチャ</b><span class="small">あと${RANKS[g.minRank].min-u.stats.draws}回ガチャを引くと${RANKS[g.minRank].n}になって引けるようになります</span></div>`}
     </div>
+    ${histHTML(g)}
     <div class="card"><h2>目玉の景品</h2><div class="show" style="margin-top:10px">${[...g.prizes.slice(0,3).map(p=>p.id),'L'].map(pid=>{const p=prizeOf(g.id,pid);
       return `<figure class="sh">${p.img?`<img src="${p.img}" alt="${esc(p.name)}">`:`<span class="ph" style="--c:${p.c}">${pid==='L'?'ラスト<br>ワン賞':pid+'賞'}</span>`}<figcaption><b>${pid==='L'?'ラストワン賞':pid+'賞'}</b><span>${esc(p.name)}</span></figcaption></figure>`}).join('')}</div></div>
     <button class="btn ghost oddsbtn" data-act="odds">景品一覧・提供割合を見る</button>
@@ -1894,7 +1977,11 @@ function viewTickets(u){
         <div class="bar" style="margin-top:10px"><i style="width:${pct}%;background:linear-gradient(90deg,var(--rc),#fff)"></i></div>
         <div class="ranks">${RANKS.map(x=>`<span style="--rc:${x.c}" class="${d>=x.min?'on':''}">${x.n}<small>${x.min}回</small></span>`).join('')}</div>
         <details class="perks"><summary>ランク特典を見る</summary>${RANKS.map((x,i)=>{const l=perkLines(i);return `<div class="perk ${x===r?'me':''}" style="--rc:${x.c}"><b>${x.n}</b><span class="small">${l.length?l.map(esc).join(' / '):'特典なし（引くほどランクが上がります）'}</span></div>`}).join('')}</details></div>`})()}
-    <div class="card"><span class="eyebrow">所持チケット</span>
+    ${eventBar()}
+    <div class="card invite"><div class="row"><b>友だち招待</b><span class="spacer"></span><span class="small muted">招待した人 ${(u.refClaimed||[]).length}人</span></div>
+      <p class="small muted">招待コードで登録すると、友だちに${REF.newbie}枚、あなたに${REF.inviter}枚（${REF.cap}人まで）。</p>
+      <div class="row"><span class="refcode num">${refCodeOf(u.email)}</span><span class="spacer"></span><button class="btn small" data-act="refShare">招待する</button></div></div>
+    <div class="card"><span class="eyebrow">所持チケット</span>${u.jp?`<span class="lockb" style="--rc:#FFD25A;margin-left:8px">JPチケット ${u.jp}枚</span>`:''}
       <div class="row"><span class="display num" style="font-size:40px">${u.tickets}</span><span class="muted">枚</span><span class="spacer"></span><span class="small muted">${u.streak}日連続ログイン中</span></div>
       <div class="row" style="margin-top:8px;padding-top:10px;border-top:1px solid var(--line)"><span class="muted">ポイント</span><b class="num">${u.points||0}pt</b><span class="small muted">（チケット${Math.floor((u.points||0)/PT_PER_TICKET)}枚分）</span><span class="spacer"></span><button class="btn small" data-act="ptAsk" ${(u.points||0)<PT_PER_TICKET?'disabled':''}>チケットに交換</button></div></div>
 
@@ -1983,6 +2070,13 @@ function viewAdmin(u){
     ${SHARED?adminsCard():'<p class="note">管理画面（デモ）。本番では管理者アカウントだけが見られる別画面にします。</p>'}
     <div class="stats"><div class="stat"><span class="small muted">公開中のガチャ</span><b class="num">${live().length}</b></div><div class="stat"><span class="small muted">報告の確認待ち</span><b class="num">${db.subs.filter(s=>s.status==='review').length}</b></div><div class="stat"><span class="small muted">未発送</span><b class="num">${pend.length}</b></div></div>
 
+    <div class="card"><h2>期間限定イベント</h2>${(()=>{const e=settings().event||{},on=activeEvent();
+      return `<p class="small muted">期間中だけ、ポイント変換やスクラッチを増やします。${on?'<b style="color:var(--green)">開催中</b>':e.end?'予約中または終了':''}</p>
+      <div class="form"><label class="f">イベント名<input id="ev-name" value="${esc(e.name||'週末ボーナス')}"></label>
+      <div class="row"><label class="f" style="flex:1">ポイント変換<select id="ev-conv">${[1,1.2,1.5,2].map(x=>`<option value="${x}" ${(e.conv||1.5)==x?'selected':''}>${x===1?'そのまま':x+'倍'}</option>`).join('')}</select></label>
+        <label class="f" style="flex:1">スクラッチ<select id="ev-scr">${[1,2,3].map(x=>`<option value="${x}" ${(e.scr||1)==x?'selected':''}>${x===1?'そのまま':x+'倍'}</option>`).join('')}</select></label></div>
+      <div class="row"><label class="f" style="flex:1">開始日<input id="ev-start" type="date" value="${esc(e.start||today())}"></label><label class="f" style="flex:1">終了日<input id="ev-end" type="date" value="${esc(e.end||'')}"></label></div>
+      <div class="row"><button class="btn small" data-act="evSave">保存</button>${e.end?'<button class="btn small ghost" data-act="evStop">イベントをやめる</button>':''}</div></div>`})()}</div>
     ${adminGachaCard()}
     ${adminCasesCard()}
     <div class="card"><h2>当選者速報</h2><p class="small muted">C賞以上とラストワン賞が自動で流れます。名前は先頭1文字だけ表示します。不適切なニックネームなどは非表示にできます。</p>
@@ -2032,6 +2126,12 @@ document.addEventListener('click',e=>{
   const aa=adminActs(el);if(aa[a]){aa[a]();return}
   const acts={
     goTab:()=>{closeModal();tab=el.dataset.tab;if(SHARED&&tab==='admin'&&!Sync.isAdmin())tab='gacha';render();window.scrollTo(0,0)},
+    refShare:()=>{const code=refCodeOf(cur().email),url=location.origin+location.pathname+'?ref='+code,text=`EXくじで遊ぼう！招待コード ${code} で登録するとチケット${REF.newbie}枚もらえるよ`;
+      if(navigator.share)navigator.share({title:'EXくじ',text,url}).catch(()=>{});else{try{navigator.clipboard.writeText(text+'\n'+url);toast('招待の文をコピーしました')}catch(e){toast(code)}}},
+    evSave:()=>{const v=id=>($(id)||{}).value||'';const e={name:v('#ev-name').trim()||'イベント',conv:+v('#ev-conv')||1,scr:+v('#ev-scr')||1,start:v('#ev-start'),end:v('#ev-end')};
+      if(!e.end){toast('終了日を入れてください');return}if(e.conv<=1&&e.scr<=1){toast('倍率を選んでください');return}
+      db.settings={...settings(),event:e};save();keepScroll(render);toast('イベントを保存しました')},
+    evStop:()=>{const st={...settings()};delete st.event;db.settings=st;save();keepScroll(render);toast('イベントを終了しました')},
     authMode:()=>Sync.setMode(el.dataset.m),pwReset:()=>Sync.reset(),reload:()=>location.reload(),
     grantTo:()=>{const x=db.users[el.dataset.email];if(x){addTickets(x,10,'管理者から付与');save();keepScroll(render);toast(x.name+'さんに10枚付与しました')}},
     admAdd:()=>{const e=($('#adm-mail').value||'').trim().toLowerCase();if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)){toast('メールアドレスを確認してください');return}Sync.addAdmin(e).then(()=>toast(e+' を管理者にしました')).catch(()=>toast('追加できませんでした'))},
