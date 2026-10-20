@@ -22,8 +22,8 @@ img{max-width:100%}
 html,body{overscroll-behavior-y:none}
 </style>
 <script>window.EX_APP=true;</script>
-<meta name="exkuji-build" content="10/20 17:07">
-<script>window.EX_SHARED=true;window.EX_BUILD="版 10/20 17:07";</script>
+<meta name="exkuji-build" content="10/20 17:29">
+<script>window.EX_SHARED=true;window.EX_BUILD="版 10/20 17:29";</script>
 </head>
 
 <body>
@@ -525,6 +525,8 @@ header.top .wrap{gap:8px}
 
 .prefgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:2px 8px}
 .areas{border:1px solid var(--line);border-radius:12px;padding:10px 12px}.areas summary{cursor:pointer}
+
+.sharebtn{width:100%;margin:6px 0 2px;background:linear-gradient(90deg,#FF5FA2,#FFD25A);color:#111;font-weight:800}
 </style>
 
 <header class="top" id="hdr" hidden>
@@ -865,7 +867,6 @@ const Sync=(()=>{
     L(FBX.watchDoc('config/main',d=>{onRemote('config/main',d);mark('main')},fail));
     L(FBX.watchDoc('users/'+S.email,d=>{onRemote('users/'+S.email,d);mark('me')},fail));
     L(FBX.watchCol('winners',{order:'at',limit:50},list=>onList('winners',list,'winners'),fail));
-    L(FBX.watchCol('referrals',{eq:['code',refCodeOf(S.email)]},list=>onList('referrals',list,'refs'),fail));
   }
   // 自分だけ見られるもの／管理者は全員分
   function scope(){scopeUnsubs.forEach(u=>{try{u()}catch(e){}});scopeUnsubs=[];
@@ -873,6 +874,7 @@ const Sync=(()=>{
     if(S.isAdmin)scopeUnsubs.push(FBX.watchCol('users',{},list=>onList('users',list),fail));
     else for(const k of Object.keys(base))if(k.startsWith('users/')&&k!=='users/'+S.email){delete base[k];delete db.users[k.slice(6)]}
     scopeUnsubs.push(FBX.watchCol('subs',own,list=>onList('subs',list,'subs'),fail));
+    scopeUnsubs.push(FBX.watchCol('referrals',S.isAdmin?{}:{eq:['code',refCodeOf(S.email)]},list=>onList('referrals',list,'refs'),fail));
     scopeUnsubs.push(FBX.watchCol('requests',own,list=>onList('requests',list,'requests'),fail));
   }
   function stopAll(){[...unsubs,...scopeUnsubs].forEach(u=>{try{u()}catch(e){}});unsubs=[];scopeUnsubs=[];S.scoped=false}
@@ -1321,6 +1323,8 @@ function burst(cv,tier,color){
 }
 function showResults(g,results,lastOne,boxNo){
   const ru=rankUpTo;rankUpTo=null;if(ru)setTimeout(sfx.rankup,200);
+  const bestP=lastOne?'L':(results.kiri||[]).length?'K':results.reduce((a,p)=>p.id<a?p.id:a,'Z');
+  lastShare=(bestP==='L'||bestP==='K'||bestP<='B')?{gid:g.id,pid:bestP,box:boxNo,no:bestP==='K'?results.kiri[0]:0}:null;
   const counts={};results.forEach(p=>counts[p.id]=(counts[p.id]||0)+1);
   const many=results.length>20;const step=many?6:Math.min(60,600/results.length);
   const hit=g.prizes.filter(p=>counts[p.id]);
@@ -1334,9 +1338,121 @@ function showResults(g,results,lastOne,boxNo){
     ${lastOne?`<p class="note">BOX #${boxNo} は完売しました。新しいBOX #${boxNo+1} が始まっています。</p>`:''}
     ${(()=>{const u=cur(),need=g.cost*10;if(u.tickets>=need||!(u.consent&&u.consent.share))return '';const c=recos(u,1)[0];if(!c)return '';
       return `<div class="nextreco"><span class="small">あと${need-u.tickets}枚で10連。この案件で+${c.pt}pt（${Math.floor(c.pt/PT_PER_TICKET)}枚分）</span>${recoRow(c)}</div>`})()}
+    ${lastShare?`<button class="btn sharebtn" data-act="shareCard">📸 当たりをシェアする（招待コード入り）</button>`:''}
     <div class="row"><button class="btn ghost" data-act="close">続けて引く</button><span class="spacer"></span><button class="btn green" data-act="goTab" data-tab="prizes">景品を見る</button></div>`);
   render();
 }
+
+// 小さなQRコード作成（文字列→白黒のマス目）。誤り訂正レベルM・バイトモード・バージョン1〜20
+const QR=(()=>{
+  const ECC=[-1,10,16,26,18,24,16,18,22,22,26,30,22,22,24,24,28,28,26,26,26];
+  const NB=[-1,1,1,1,2,2,4,4,4,5,5,5,8,9,9,10,10,11,13,14,16];
+  const raw=v=>{let r=(16*v+128)*v+64;if(v>=2){const n=Math.floor(v/7)+2;r-=(25*n-10)*n-55;if(v>=7)r-=36}return r};
+  const dataCw=v=>Math.floor(raw(v)/8)-ECC[v]*NB[v];
+  const mul=(x,y)=>{let z=0;for(let i=7;i>=0;i--){z=(z<<1)^((z>>>7)*0x11D);z^=((y>>>i)&1)*x}return z&255};
+  function divisor(d){const r=new Array(d).fill(0);r[d-1]=1;let root=1;for(let i=0;i<d;i++){for(let j=0;j<d;j++){r[j]=mul(r[j],root);if(j+1<d)r[j]^=r[j+1]}root=mul(root,2)}return r}
+  function rem(data,div){const r=div.map(()=>0);for(const b of data){const f=b^r.shift();r.push(0);div.forEach((c,i)=>r[i]^=mul(c,f))}return r}
+  function align(v,size){if(v===1)return [];const n=Math.floor(v/7)+2,step=Math.ceil((v*4+4)/(n*2-2))*2,r=[6];for(let p=size-7;r.length<n;p-=step)r.splice(1,0,p);return r}
+  function make(text){
+    const bytes=[...new TextEncoder().encode(text)];
+    let v=1;for(;v<=20;v++){const cap=dataCw(v)*8,need=4+(v<=9?8:16)+bytes.length*8;if(need<=cap)break}
+    if(v>20)throw new Error('too long');
+    const bits=[];const put=(val,n)=>{for(let i=n-1;i>=0;i--)bits.push((val>>>i)&1)};
+    put(4,4);put(bytes.length,v<=9?8:16);bytes.forEach(b=>put(b,8));
+    const cap=dataCw(v)*8;put(0,Math.min(4,cap-bits.length));while(bits.length%8)bits.push(0);
+    for(let p=0xEC;bits.length<cap;p^=0xEC^0x11)put(p,8);
+    const data=[];for(let i=0;i<bits.length;i+=8){let b=0;for(let j=0;j<8;j++)b=(b<<1)|bits[i+j];data.push(b)}
+    // 誤り訂正を付けて並べ替え
+    const nb=NB[v],el=ECC[v],rc=Math.floor(raw(v)/8),ns=nb-rc%nb,sl=Math.floor(rc/nb),dv=divisor(el),blocks=[];
+    for(let i=0,k=0;i<nb;i++){const d=data.slice(k,k+sl-el+(i<ns?0:1));k+=d.length;const e=rem(d,dv);if(i<ns)d.push(0);blocks.push(d.concat(e))}
+    const cw=[];for(let i=0;i<blocks[0].length;i++)blocks.forEach((b,j)=>{if(i!==sl-el||j>=ns)cw.push(b[i])});
+    const size=v*4+17;
+    const base=()=>({m:Array.from({length:size},()=>new Array(size).fill(false)),f:Array.from({length:size},()=>new Array(size).fill(false))});
+    const S=base();const set=(x,y,on)=>{S.m[y][x]=on;S.f[y][x]=true};
+    for(let i=0;i<size;i++){set(6,i,i%2===0);set(i,6,i%2===0)}
+    const finder=(cx,cy)=>{for(let dy=-4;dy<=4;dy++)for(let dx=-4;dx<=4;dx++){const d=Math.max(Math.abs(dx),Math.abs(dy)),x=cx+dx,y=cy+dy;if(x>=0&&x<size&&y>=0&&y<size)set(x,y,d!==2&&d!==4)}};
+    finder(3,3);finder(size-4,3);finder(3,size-4);
+    const al=align(v,size);al.forEach((a,i)=>al.forEach((b,j)=>{if((i===0&&j===0)||(i===0&&j===al.length-1)||(i===al.length-1&&j===0))return;for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++)set(a+dx,b+dy,Math.max(Math.abs(dx),Math.abs(dy))!==1)}));
+    const fmt=(mask,M)=>{const d=(0<<3)|mask;let r=d;for(let i=0;i<10;i++)r=(r<<1)^((r>>>9)*0x537);const b=((d<<10)|r)^0x5412;const g=i=>((b>>>i)&1)!==0;
+      const s=(x,y,on)=>{M.m[y][x]=on;M.f[y][x]=true};
+      for(let i=0;i<=5;i++)s(8,i,g(i));s(8,7,g(6));s(8,8,g(7));s(7,8,g(8));for(let i=9;i<15;i++)s(14-i,8,g(i));
+      for(let i=0;i<8;i++)s(size-1-i,8,g(i));for(let i=8;i<15;i++)s(8,size-15+i,g(i));s(8,size-8,true)};
+    fmt(0,S);
+    if(v>=7){let r=v;for(let i=0;i<12;i++)r=(r<<1)^((r>>>11)*0x1F25);const b=(v<<12)|r;for(let i=0;i<18;i++){const on=((b>>>i)&1)!==0,a=size-11+i%3,c=Math.floor(i/3);set(a,c,on);set(c,a,on)}}
+    // データを置く
+    let bi=0;const allBits=cw.length*8;
+    for(let right=size-1;right>=1;right-=2){if(right===6)right=5;for(let vert=0;vert<size;vert++)for(let j=0;j<2;j++){const x=right-j,up=((right+1)&2)===0,y=up?size-1-vert:vert;
+      if(!S.f[y][x]&&bi<allBits){S.m[y][x]=((cw[bi>>>3]>>>(7-(bi&7)))&1)!==0;bi++}}}
+    const MASKS=[(x,y)=>(x+y)%2===0,(x,y)=>y%2===0,(x,y)=>x%3===0,(x,y)=>(x+y)%3===0,(x,y)=>(Math.floor(x/3)+Math.floor(y/2))%2===0,(x,y)=>x*y%2+x*y%3===0,(x,y)=>(x*y%2+x*y%3)%2===0,(x,y)=>((x+y)%2+x*y%3)%2===0];
+    const pen=m=>{let p=0,dark=0;for(let y=0;y<size;y++){let run=1;for(let x=0;x<size;x++){if(m[y][x])dark++;if(x&&m[y][x]===m[y][x-1]){run++;if(run===5)p+=3;else if(run>5)p++}else run=1}}
+      for(let x=0;x<size;x++){let run=1;for(let y=1;y<size;y++){if(m[y][x]===m[y-1][x]){run++;if(run===5)p+=3;else if(run>5)p++}else run=1}}
+      for(let y=0;y<size-1;y++)for(let x=0;x<size-1;x++){const c=m[y][x];if(c===m[y][x+1]&&c===m[y+1][x]&&c===m[y+1][x+1])p+=3}
+      const t=size*size,k=Math.ceil(Math.abs(dark*20-t*10)/t)-1;return p+Math.max(0,k)*10};
+    let best=null,bp=1e9;
+    for(let k=0;k<8;k++){const M={m:S.m.map((r,y)=>r.map((on,x)=>!S.f[y][x]&&MASKS[k](x,y)?!on:on)),f:S.f.map(r=>r.slice())};fmt(k,M);const p=pen(M.m);if(p<bp){bp=p;best=M.m}}
+    return best;
+  }
+  // キャンバスに描く（x,y：左上、s：1辺の長さ。白い余白込み）
+  function draw(ctx,text,x,y,s){const m=make(text),n=m.length,q=s/(n+8);ctx.fillStyle='#fff';ctx.fillRect(x,y,s,s);ctx.fillStyle='#000';
+    for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(m[r][c])ctx.fillRect(x+(c+4)*q,y+(r+4)*q,Math.ceil(q),Math.ceil(q))}
+  return {make,draw};
+})();
+
+// 招待用のURL
+const refUrl=code=>{const base=(location.protocol==='https:'&&!/claude/.test(location.host))?location.origin+location.pathname:'https://exkuji-demo-10151927.web.app/';return base+'?ref='+code};
+const loadImage=src=>new Promise(r=>{if(!src)return r(null);const im=new Image();im.onload=()=>r(im);im.onerror=()=>r(null);im.src=src});
+// 当たりの画像（1080×1350・インスタやXにそのまま投稿できる縦長）
+async function makeShareCard(gid,pid,box,no){
+  const g=G(gid),p=prizeOf(gid,pid),u=cur(),code=refCodeOf(u.email),W=1080,H=1350;
+  const cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d');
+  let col=cssColor(pid==='L'?'var(--cap-a)':p.c)||'';if(!/^#[0-9a-f]{6}$/i.test(col))col='#FFD25A';
+  if(!x.roundRect)x.roundRect=function(a,b,c,d){this.rect(a,b,c,d)};
+  let gr=x.createLinearGradient(0,0,W,H);gr.addColorStop(0,'#0B1630');gr.addColorStop(.55,'#101E44');gr.addColorStop(1,'#070F22');x.fillStyle=gr;x.fillRect(0,0,W,H);
+  // 光の筋
+  x.save();x.translate(W/2,560);for(let i=0;i<24;i++){x.rotate(Math.PI/12);x.fillStyle=i%2?'rgba(255,255,255,.035)':'rgba(255,210,90,.05)';x.beginPath();x.moveTo(0,0);x.lineTo(-90,-900);x.lineTo(90,-900);x.closePath();x.fill()}x.restore();
+  gr=x.createRadialGradient(W/2,560,40,W/2,560,520);gr.addColorStop(0,col+'88');gr.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=gr;x.fillRect(0,0,W,H);
+  for(let i=0;i<70;i++){x.fillStyle=`rgba(255,255,255,${.25+Math.random()*.6})`;const r=Math.random()*3+1;x.beginPath();x.arc(Math.random()*W,Math.random()*H,r,0,7);x.fill()}
+  const font=(w,sz)=>`${w} ${sz}px "Dela Gothic One","Zen Kaku Gothic New","Hiragino Sans",sans-serif`;
+  x.textAlign='center';x.textBaseline='alphabetic';
+  x.fillStyle='#fff';x.font=font(900,64);x.fillText('EXくじ',W/2,120);
+  x.fillStyle='rgba(255,255,255,.65)';x.font=font(700,26);x.fillText('WEB BOX GACHA',W/2,162);
+  const head=pid==='L'?'ラストワン賞 GET！':pid==='K'?`${no?no.toLocaleString()+'回目 ':''}キリ番賞 GET！`:`${pid}賞 当選！`;
+  x.font=font(900,96);x.lineWidth=14;x.strokeStyle='rgba(0,0,0,.45)';x.strokeText(head,W/2,290);
+  gr=x.createLinearGradient(0,210,0,300);gr.addColorStop(0,'#FFF6C8');gr.addColorStop(1,col);x.fillStyle=gr;x.fillText(head,W/2,290);
+  // 景品の画像
+  const im=await loadImage(p.img);const S=480,ix=(W-S)/2,iy=330;
+  x.save();x.shadowColor=col;x.shadowBlur=60;x.fillStyle='rgba(255,255,255,.08)';x.beginPath();x.roundRect(ix-20,iy-20,S+40,S+40,48);x.fill();x.restore();
+  if(im){x.save();x.beginPath();x.roundRect(ix,iy,S,S,36);x.clip();const k=Math.max(S/im.width,S/im.height);x.drawImage(im,ix+(S-im.width*k)/2,iy+(S-im.height*k)/2,im.width*k,im.height*k);x.restore()}
+  // 景品名（長いときは2行）
+  x.fillStyle='#fff';x.font=font(800,52);const nm=p.name||'';const lines=[];let line='';for(const ch of nm){if(x.measureText(line+ch).width>W-160){lines.push(line);line=ch}else line+=ch}lines.push(line);
+  lines.slice(0,2).forEach((l,i)=>x.fillText(l,W/2,900+i*64));
+  x.fillStyle='rgba(255,255,255,.7)';x.font=font(700,30);x.fillText(`${g?g.name:''}・BOX #${box}`,W/2,900+Math.min(2,lines.length)*64+10);
+  // 下：QRと招待コード
+  const by=1060;x.fillStyle='rgba(255,255,255,.08)';x.beginPath();x.roundRect(60,by,W-120,230,32);x.fill();
+  QR.draw(x,refUrl(code),90,by+20,190);
+  x.textAlign='left';x.fillStyle='#FFD25A';x.font=font(900,44);x.fillText(code,310,by+82);
+  x.fillStyle='#fff';x.font=font(700,30);x.fillText(`このコードで登録すると`,310,by+136);x.fillText(`チケット${REF.newbie}枚もらえる！`,310,by+178);
+  x.fillStyle='rgba(255,255,255,.55)';x.font=font(700,24);x.fillText('#EXくじ',310,by+214);
+  return cv;
+}
+let lastShare=null;
+async function openShare(){
+  if(!lastShare)return;const {gid,pid,box,no}=lastShare;
+  openModal(`<h3>当たりをシェア</h3><p class="small muted">画像を作っています…</p>`);
+  let cv;try{cv=await makeShareCard(gid,pid,box,no)}catch(e){console.warn(e);openModal(`<h3>画像を作れませんでした</h3><button class="btn ghost" data-act="close">閉じる</button>`);return}
+  const url=cv.toDataURL('image/png');const code=refCodeOf(cur().email),p=prizeOf(gid,pid);
+  const text=`EXくじで「${p.name}」が当たった！🎉\n招待コード ${code} で登録するとチケット${REF.newbie}枚もらえるよ\n${refUrl(code)}\n#EXくじ`;
+  openModal(`<h3>当たりをシェア</h3><img src="${url}" alt="当たりのシェア画像" style="width:100%;border-radius:14px;display:block">
+    <p class="small muted" style="margin-top:6px">画像を長押しすると保存できます。招待コードとQRコードが入っています。</p>
+    <div class="row"><button class="btn ghost" data-act="close">閉じる</button><span class="spacer"></span><button class="btn" data-act="shareDo">シェアする</button></div>`);
+  window._shareData={url,text,cv};
+}
+async function shareDo(){const d=window._shareData;if(!d)return;
+  try{const blob=await new Promise(r=>d.cv.toBlob(r,'image/png'));const file=new File([blob],'exkuji.png',{type:'image/png'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],text:d.text});return}
+    if(navigator.share){await navigator.share({text:d.text});return}}catch(e){if(e&&e.name==='AbortError')return}
+  const a=document.createElement('a');a.href=d.url;a.download='exkuji.png';document.body.appendChild(a);a.click();a.remove();
+  try{await navigator.clipboard.writeText(d.text);toast('画像を保存し、投稿の文をコピーしました')}catch(e){toast('画像を保存しました')}}
 
 /* ---------- tickets ---------- */
 function claimDaily(){const u=cur();if(u.dailyClaimed===today())return;u.dailyClaimed=today();addPoints(u,2,'デイリーログイン');save();render();toast('+2pt デイリーログイン')}
@@ -2123,6 +2239,15 @@ function adminsCard(){const me=Sync.email();
   return `<div class="card"><h2>管理者</h2><p class="small muted">管理画面を見られる人です。ここにメールアドレスを追加した人は、ログインすると「管理」タブが出ます。</p>
     <div class="list">${Sync.admins().map(e=>`<div class="item"><div class="t"><b style="font-weight:500">${esc(e)}</b>${e===me?'<span class="small muted">あなた</span>':''}</div>${e===me?'':`<button class="btn small ghost" data-act="admDel" data-email="${esc(e)}">外す</button>`}</div>`).join('')}</div>
     <div class="row" style="margin-top:10px"><input id="adm-mail" type="email" placeholder="追加するメールアドレス" style="flex:1;min-width:0"><button class="btn small" data-act="admAdd">追加</button></div></div>`}
+function creatorsCard(){const cs=settings().creators||[],us=Object.values(db.users);
+  const st=c=>{const m=us.filter(u=>u.referredBy===c.code);return {n:m.length,draws:m.reduce((t,u)=>t+(u.stats.draws||0),0),act:m.filter(u=>u.lastDay&&u.lastDay>=dkey(now()-7*86400000)).length}};
+  return `<div class="card"><h2>発信者コード（開封動画など）</h2><p class="small muted">発信者ごとに専用の招待コードを作ると、その人の動画から何人登録して、何回引いたかが分かります。コードで登録した人には通常の招待と同じくチケット${REF.newbie}枚。動画で紹介してもらうときは「#PR」の表記をお願いしてください。</p>
+    ${cs.length?`<div class="tablewrap"><table class="odds"><thead><tr><th>発信者</th><th class="r">登録</th><th class="r">7日内に利用</th><th class="r">引いた回数</th><th></th></tr></thead><tbody>
+      ${cs.map(c=>{const x=st(c);return `<tr><td><b>${esc(c.name)}</b><br><span class="small num" style="color:var(--gold)">${esc(c.code)}</span>${c.note?`<br><span class="small muted">${esc(c.note)}</span>`:''}</td><td class="r">${x.n}人</td><td class="r">${x.act}人</td><td class="r">${x.draws.toLocaleString()}回</td>
+        <td class="r" style="white-space:nowrap"><button class="btn small ghost" data-act="crCopy" data-code="${esc(c.code)}">URL</button><button class="btn small ghost" data-act="crDel" data-code="${esc(c.code)}">削除</button></td></tr>`}).join('')}
+      </tbody></table></div>`:'<p class="muted small">まだありません。</p>'}
+    <div class="form" style="margin-top:10px"><div class="row"><label class="f" style="flex:1">名前<input id="cr-name" placeholder="例：たなか（TikTok）"></label><label class="f" style="flex:1">コード<input id="cr-code" autocapitalize="characters" placeholder="例：TANAKA"></label></div>
+      <label class="f">メモ（報酬の条件など）<input id="cr-note" placeholder="例：登録1人につき200円"></label><button class="btn small" data-act="crAdd" style="align-self:flex-start">コードを作る</button></div></div>`}
 function viewAdmin(u){
   const users=Object.values(db.users);
   const pend=db.requests.filter(r=>r.status==='req');
@@ -2141,6 +2266,7 @@ function viewAdmin(u){
       <div class="row"><button class="btn small" data-act="evSave">保存</button>${e.end?'<button class="btn small ghost" data-act="evStop">イベントをやめる</button>':''}</div></div>`})()}</div>
     ${adminGachaCard()}
     ${adminCasesCard()}
+    ${creatorsCard()}
     <div class="card"><h2>当選者速報</h2><p class="small muted">C賞以上とラストワン賞が自動で流れます。名前は先頭1文字だけ表示します。不適切なニックネームなどは非表示にできます。</p>
       ${(db.winners||[]).length?`<div class="list">${db.winners.slice(0,10).map(x=>`<div class="item">${tierDot(x.pid)}<div class="t"><b style="font-weight:500">${esc(x.name)}（表示：${esc(maskName(x.name))}さん）</b><span class="small muted">${esc(G(x.gid)?.name||'')}・${esc(prizeOf(x.gid,x.pid).name)}・${ago(x.at)}</span></div><button class="btn small ghost" data-act="winHide" data-id="${x.id}">${x.hidden?'表示する':'非表示'}</button></div>`).join('')}</div>`:'<p class="muted">まだありません。</p>'}</div>
     <div class="card"><h2>送料・原価の設定</h2>
@@ -2198,6 +2324,13 @@ document.addEventListener('click',e=>{
     prefAsk:()=>openModal(`<h3>お住まいの都道府県</h3><p class="small muted">地域限定の案件を表示するために使います。</p><div class="form">${prefSelect('pf-pref',cur().pref,false)}</div><div class="row" style="margin-top:12px"><button class="btn ghost" data-act="close">やめる</button><span class="spacer"></span><button class="btn" data-act="prefSave">保存</button></div>`),
     areaAll:()=>{document.querySelectorAll('.ce-pref').forEach(x=>x.checked=false)},
     areaReg:()=>{const ps=(REGIONS.find(r=>r[0]===el.dataset.r)||[0,[]])[1];const on=ps.every(p=>document.querySelector(`.ce-pref[value="${p}"]`).checked);ps.forEach(p=>document.querySelector(`.ce-pref[value="${p}"]`).checked=!on)},
+    shareCard:openShare,shareDo,
+    crAdd:()=>{const v=id=>(($(id)||{}).value||'').trim();const name=v('#cr-name'),code=v('#cr-code').toUpperCase().replace(/[^A-Z0-9]/g,'');
+      if(!name||code.length<3){toast('名前と3文字以上のコード（英数字）を入れてください');return}
+      const all=settings().creators||[];if(all.some(c=>c.code===code)||Object.values(db.users).some(u=>refCodeOf(u.email)===code)){toast('そのコードは使われています');return}
+      db.settings={...settings(),creators:[...all,{code,name,note:v('#cr-note'),at:now()}]};save();keepScroll(render);toast(name+'さんのコードを作りました')},
+    crDel:()=>{db.settings={...settings(),creators:(settings().creators||[]).filter(c=>c.code!==el.dataset.code)};save();keepScroll(render);toast('コードを削除しました')},
+    crCopy:()=>{const u=refUrl(el.dataset.code);try{navigator.clipboard.writeText(u);toast('URLをコピーしました')}catch(e){toast(u)}},
     authMode:()=>Sync.setMode(el.dataset.m),pwReset:()=>Sync.reset(),reload:()=>location.reload(),
     grantTo:()=>{const x=db.users[el.dataset.email];if(x){addTickets(x,10,'管理者から付与');save();keepScroll(render);toast(x.name+'さんに10枚付与しました')}},
     admAdd:()=>{const e=($('#adm-mail').value||'').trim().toLowerCase();if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)){toast('メールアドレスを確認してください');return}Sync.addAdmin(e).then(()=>toast(e+' を管理者にしました')).catch(()=>toast('追加できませんでした'))},
