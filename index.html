@@ -22,8 +22,8 @@ img{max-width:100%}
 html,body{overscroll-behavior-y:none}
 </style>
 <script>window.EX_APP=true;</script>
-<meta name="exkuji-build" content="10/20 12:55">
-<script>window.EX_SHARED=true;window.EX_BUILD="版 10/20 12:55";</script>
+<meta name="exkuji-build" content="10/20 17:07">
+<script>window.EX_SHARED=true;window.EX_BUILD="版 10/20 17:07";</script>
 </head>
 
 <body>
@@ -522,6 +522,9 @@ header.top .wrap{gap:8px}
 .fx-god b{font-family:var(--display);font-size:48px;line-height:1;background:linear-gradient(90deg,#ff5f6d,#ffc371,#fff36b,#7cf29a,#5fd3ff,#a78bfa);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 12px rgba(255,255,255,.6))}
 .fx-god span{font-weight:800;color:#fff;text-shadow:0 0 10px #ff5fa2}
 @keyframes godpop{0%{opacity:0;scale:.4}12%{opacity:1;scale:1.25}25%{scale:1}80%{opacity:1}100%{opacity:0;scale:1.05}}
+
+.prefgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:2px 8px}
+.areas{border:1px solid var(--line);border-radius:12px;padding:10px 12px}.areas summary{cursor:pointer}
 </style>
 
 <header class="top" id="hdr" hidden>
@@ -650,6 +653,8 @@ const ADD_GACHAS=[
    last:['旅行券 20万円分',200000,0],kiri:{every:500,name:'デジタルギフト 1,000円分',cost:1100,pt:50,digital:true}}
 ];
 function addPresetGachas(){db.added=db.added||[];let n=0;
+  for(const c of ADD_CASES){if(db.added.includes(c.id))continue;db.added.push(c.id);
+    if(db.cases&&!db.cases.some(x=>x.id===c.id)){db.cases.push({...c,status:'paused',verify:'スクショ承認',url:'',cap:0,start:'',end:'',featured:false,banner:false,min:0});n++}}
   for(const d of ADD_GACHAS){if(db.added.includes(d.id))continue;db.added.push(d.id);
     if(!G(d.id)){const g=buildGacha({...d,filled:null});if(d.kiri)g.kiri={...d.kiri};if(d.minRank)g.minRank=d.minRank;if(d.newbieHours){g.newbieHours=d.newbieHours;g.perUser=d.perUser}if(d.currency)g.currency=d.currency;db.gachas.push(g);n++}}
   return n}
@@ -690,19 +695,36 @@ const SHARE_SIGNUP='登録したメールアドレスまたはユーザーID、�
 CASES.forEach(c=>{c.client=c.kind===S?'サンプルリサーチ株式会社（デモ）':c.title.split(' ')[0].replace(/に.*$/,'')+'の提供元（デモ）';c.share=c.kind===S?SHARE_SURVEY:SHARE_SIGNUP;c.purpose=c.kind===S?'市場調査・商品開発、回答の集計':'登録の成果確認と報酬の請求'});
 const CATS=['すべて',...new Set(CASES.map(c=>c.cat))];
 let caseKind='all',caseCat='すべて';
+// 自社・ひな形の案件（停止中で追加。リンクを入れて再開する）
+// 地域（案件の対象エリア）
+const REGIONS=[['北海道・東北',['北海道','青森県','岩手県','宮城県','秋田県','山形県','福島県']],['関東',['茨城県','栃木県','群馬県','埼玉県','千葉県','東京都','神奈川県']],
+  ['北陸・甲信越',['新潟県','富山県','石川県','福井県','山梨県','長野県']],['東海',['岐阜県','静岡県','愛知県','三重県']],['近畿',['滋賀県','京都府','大阪府','兵庫県','奈良県','和歌山県']],
+  ['中国・四国',['鳥取県','島根県','岡山県','広島県','山口県','徳島県','香川県','愛媛県','高知県']],['九州・沖縄',['福岡県','佐賀県','長崎県','熊本県','大分県','宮崎県','鹿児島県','沖縄県']]];
+const PREFS=REGIONS.flatMap(r=>r[1]);
+const areaOk=(c,u)=>!c.areas||!c.areas.length||!!(u&&u.pref&&c.areas.includes(u.pref));
+const caseFor=(c,u)=>caseVisible(c)&&areaOk(c,u);
+function areaLabel(a){if(!a||!a.length)return '全国';const set=new Set(a),parts=[];const rest=new Set(a);
+  for(const [n,ps] of REGIONS)if(ps.every(p=>set.has(p))){parts.push(n);ps.forEach(p=>rest.delete(p))}
+  const r=[...rest];return [...parts,...r.slice(0,3)].join('・')+(r.length>3?` ほか${r.length-3}`:'')}
+const prefSelect=(id,v,req)=>`<select id="${id}" ${req?'required':''}><option value="">${req?'選んでください':'選ばない'}</option>${REGIONS.map(([n,ps])=>`<optgroup label="${n}">${ps.map(p=>`<option ${p===v?'selected':''}>${p}</option>`).join('')}</optgroup>`).join('')}</select>`;
 const CMAP=Object.fromEntries(CASES.map(c=>[c.id,c]));
 const AF='アフィリエイト（購入・申込）',PR='プロモーション';
 const KINDS=[S,R,AF,PR];
+const ADD_CASES=[
+  {id:'x_staff',kind:PR,cat:'求人',title:'EXCEEDのスタッフ募集に応募する',client:'株式会社EXCEED',yen:30000,pt:300,share:'氏名、電話番号、メールアドレス、お住まいの都道府県',purpose:'当社（株式会社EXCEED）の採用選考',how:'応募完了画面',note:'愛知・岐阜・三重で働ける方。採用が決まったらポイントを付与',areas:['愛知県','岐阜県','三重県']},
+  {id:'x_mnp',kind:PR,cat:'通信・スマホ',title:'スマホ・光回線の乗り換え相談を予約（名古屋の店舗）',client:'株式会社EXCEED',yen:10000,pt:200,share:'氏名、電話番号、メールアドレス、希望日時',purpose:'当社店舗でのご相談・ご案内',how:'予約完了画面',note:'来店して相談が終わったらポイントを付与',areas:['愛知県']},
+  {id:'x_jobaf',kind:AF,cat:'求人',title:'アルバイト求人サイトに登録して応募する',client:'（提携先を設定してください）',yen:1500,pt:50,share:SHARE_SIGNUP,purpose:'成果の確認',how:'応募完了メール',note:'全国。提携する求人サイトのリンクを入れてから再開してください',areas:[]}
+];
 const CS=id=>(db.cases||[]).find(c=>c.id===id)||CMAP[id];
 const verb=c=>c.kind===S?'回答':c.kind===AF?'申込':'登録';
 const ptSuggest=yen=>Math.max(1,Math.round((+yen||0)/30));
 const giveRate=(pt,yen)=>yen>0?Math.round(pt*(settings().target||50)/PT_PER_TICKET/yen*100):0;
 function caseUsed(c){return db.subs.filter(s=>s.caseId===c.id&&s.status!=='ng').length}
 function caseVisible(c){const t=today();return c.status==='live'&&(!c.start||c.start<=t)&&(!c.end||t<=c.end)&&!(c.cap>0&&caseUsed(c)>=c.cap)}
-function catsNow(){return ['すべて',...new Set((db.cases||[]).filter(caseVisible).map(c=>c.cat).filter(Boolean))]}
+function catsNow(){return ['すべて',...new Set((db.cases||[]).filter(c=>caseFor(c,cur())).map(c=>c.cat).filter(Boolean))]}
 // まだこなしていない、表示中の案件をおすすめ順に
 function recos(u,n,onlyBanner){const done=new Set(db.subs.filter(s=>s.email===u.email&&s.status!=='ng').map(s=>s.caseId));
-  return (db.cases||[]).filter(c=>caseVisible(c)&&!done.has(c.id)&&(!onlyBanner||c.banner)).sort((a,b)=>(b.featured?1:0)-(a.featured?1:0)||b.pt-a.pt).slice(0,n)}
+  return (db.cases||[]).filter(c=>caseFor(c,u)&&!done.has(c.id)&&(!onlyBanner||c.banner)).sort((a,b)=>(b.featured?1:0)-(a.featured?1:0)||b.pt-a.pt).slice(0,n)}
 function recoRow(c){return `<div class="item reco"><div class="t"><b>${esc(c.title)}</b><span class="small muted">${esc(c.kind===S?`アンケート・約${c.min||3}分`:c.kind)}</span></div><span class="reward">+${c.pt}pt</span><button class="btn small" data-act="caseGo" data-id="${c.id}">見る</button></div>`}
 function bannerHTML(u){const c=recos(u,1,true)[0];if(!c)return '';
   return `<button type="button" class="promo" data-act="caseGo" data-id="${c.id}"><span class="prtag">PR</span><span class="pt"><b>${esc(c.title)}</b><span class="small">${esc(c.note||c.client)}</span></span><span class="pv"><b class="num">+${c.pt}pt</b><span class="small">チケット${Math.floor(c.pt/PT_PER_TICKET)}枚分</span></span></button>`}
@@ -829,7 +851,7 @@ const Sync=(()=>{
     if(tag)mark(tag)}
   // 画面の更新（入力中・演出中は待つ）
   function busy(){const a=document.activeElement;return !!($('#modalRoot').innerHTML||document.querySelector('.fx')||Draw.on||(a&&a.closest&&a.closest('#app')&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)))}
-  function changed(){if(S.state!=='ready')return;if(S.isAdmin&&db.gachas.length&&ADD_GACHAS.some(d=>!(db.added||[]).includes(d.id))&&'config/main' in base){if(addPresetGachas()){syncAllGifts();push()}else push()}clearTimeout(renderT);renderT=setTimeout(flush,150)}
+  function changed(){if(S.state!=='ready')return;if(S.isAdmin&&db.gachas.length&&[...ADD_GACHAS,...ADD_CASES].some(d=>!(db.added||[]).includes(d.id))&&'config/main' in base){if(addPresetGachas()){syncAllGifts();push()}else push()}clearTimeout(renderT);renderT=setTimeout(flush,150)}
   function flush(){if(busy()){renderHeader();clearTimeout(renderWait);renderWait=setTimeout(flush,900);return}keepScroll(render)}
   // 読み込み
   const NEED=['admins','gachas','main','me','winners','subs','requests','refs'];
@@ -865,7 +887,7 @@ const Sync=(()=>{
     let u=db.users[S.email],isNew=false;
     if(!u){const p=S.pending||{};isNew=true;
       u=db.users[S.email]=makeUser(p.name||S.email.split('@')[0],S.email,now());addTickets(u,3,'新規登録ボーナス');
-      u.consent=p.consent||{terms:now(),share:null};if(applyRefOnSignup(u,p.ref))setTimeout(()=>toast(`招待コード特典：チケット${REF.newbie}枚`),2600)}
+      u.consent=p.consent||{terms:now(),share:null};if(p.pref)u.pref=p.pref;if(applyRefOnSignup(u,p.ref))setTimeout(()=>toast(`招待コード特典：チケット${REF.newbie}枚`),2600)}
     u.consent=u.consent||{terms:null,share:null};u.caseConsents=u.caseConsents||{};
     touchLogin(u);S.pending=null;db.session=S.email;S.state='ready';
     if(!S.isAdmin&&tab==='admin')tab='gacha';
@@ -896,7 +918,8 @@ const Sync=(()=>{
       if(S.mode==='signup'){const n=$('#lg-name').value.trim();
         if(!n){setErr('ニックネームを入力してください。');if(btn){btn.disabled=false;btn.textContent='登録してはじめる'}return}
         if(!$('#lg-agree').checked){setErr('利用規約とプライバシーポリシーへの同意が必要です。');if(btn){btn.disabled=false;btn.textContent='登録してはじめる'}return}
-        S.pending={name:n,ref:($('#lg-ref')||{}).value||'',consent:{terms:Date.now(),share:$('#lg-share').checked?Date.now():null}};
+        const pf=($('#lg-pref')||{}).value||'';if(!pf){setErr('お住まいの都道府県を選んでください。');if(btn){btn.disabled=false;btn.textContent='登録してはじめる'}return}
+        S.pending={name:n,pref:pf,ref:($('#lg-ref')||{}).value||'',consent:{terms:Date.now(),share:$('#lg-share').checked?Date.now():null}};
         await FBX.signUp(m,pw)}
       else await FBX.signIn(m,pw);
     }catch(e){S.pending=null;setErr(authMsg(e));if(btn){btn.disabled=false;btn.textContent=S.mode==='signup'?'登録してはじめる':'ログイン'}}
@@ -1159,6 +1182,7 @@ function signIn(name,email,agree,share){
     if(!agree){$('#lgErr').textContent='はじめての方は、利用規約とプライバシーポリシーへの同意が必要です。';return}
     isNew=true;u=db.users[email]=makeUser(name.trim(),email,now());addTickets(u,3,'新規登録ボーナス');
     u.consent={terms:now(),share:share?now():null};
+    u.pref=($('#lg-pref')||{}).value||'';
     if(applyRefOnSignup(u,($('#lg-ref')||{}).value))setTimeout(()=>toast(`招待コード特典：チケット${REF.newbie}枚`),2600);
   }
   u.consent=u.consent||{terms:null,share:null};u.caseConsents=u.caseConsents||{};
@@ -1644,7 +1668,7 @@ function adminCasesCard(){
     <div class="list" style="margin-top:6px">${cs.map(c=>{const [st,sc]=ST[c.status]||ST.live;const used=caseUsed(c),ok=db.subs.filter(s=>s.caseId===c.id&&s.status==='ok').length;
       const off=c.status==='live'&&!caseVisible(c)?(c.cap>0&&used>=c.cap?'上限に達しました':'掲載期間外'):'';
       return `<div class="item" style="align-items:flex-start"><div class="t"><b>${esc(c.title)}</b>
-        <span class="small muted">${esc(c.kind)}・${esc(c.client)}<br>単価 ¥${(+c.yen).toLocaleString()} → ${c.pt}pt（還元率 約${giveRate(c.pt,c.yen)}%）・承認 ${ok}件${c.cap?` / 上限${c.cap}件`:''}・${esc(c.verify||'スクショ承認')}${c.start||c.end?`<br>期間 ${c.start||'—'} 〜 ${c.end||'—'}`:''}</span>
+        <span class="small muted">${esc(c.kind)}・${esc(c.client)}<br>単価 ¥${(+c.yen).toLocaleString()} → ${c.pt}pt（還元率 約${giveRate(c.pt,c.yen)}%）・承認 ${ok}件${c.cap?` / 上限${c.cap}件`:''}・${esc(c.verify||'スクショ承認')}<br>エリア：${esc(areaLabel(c.areas))}${c.start||c.end?`<br>期間 ${c.start||'—'} 〜 ${c.end||'—'}`:''}</span>
         <div class="row" style="margin-top:4px;gap:6px"><span class="pill ${sc}">${st}</span>${c.featured?'<span class="pill req">おすすめ</span>':''}${c.banner?'<span class="pill held">バナー</span>':''}${off?`<span class="small" style="color:var(--danger)">${off}</span>`:''}</div>
         <div class="row" style="margin-top:6px"><button class="btn small ghost" data-act="caseEdit" data-id="${c.id}">編集</button>${c.status!=='ended'?`<button class="btn small ghost" data-act="caseToggle" data-id="${c.id}">${c.status==='live'?'停止':'再開'}</button><button class="btn small ghost" data-act="caseEndAsk" data-id="${c.id}">終了</button>`:''}</div></div></div>`}).join('')}</div></div>`;
 }
@@ -1670,6 +1694,11 @@ function openCaseEdit(id){
       <div class="row" style="flex-wrap:nowrap"><label class="f" style="flex:1">開始日<input id="ce-start" type="date" value="${c.start||''}"></label>
         <label class="f" style="flex:1">終了日<input id="ce-end" type="date" value="${c.end||''}"></label>
         <label class="f" style="flex:1">件数の上限<input id="ce-cap" type="number" inputmode="numeric" min="0" value="${c.cap||0}"></label></div>
+      <details class="areas" ${c.areas&&c.areas.length?'open':''}><summary><b>対象エリア</b>：<span id="ce-area-lbl">${esc(areaLabel(c.areas))}</span></summary>
+        <p class="small muted">チェックがない＝全国に表示。チェックした都道府県に住んでいる人だけに表示します（自社の求人・店頭の相談などに）。</p>
+        <div class="row" style="flex-wrap:wrap;gap:6px;margin:6px 0">${REGIONS.map(([n])=>`<button type="button" class="chip" data-act="areaReg" data-r="${n}">${n}</button>`).join('')}<button type="button" class="chip" data-act="areaAll">全国に戻す</button></div>
+        ${REGIONS.map(([n,ps])=>`<div class="small muted" style="margin-top:6px">${n}</div><div class="prefgrid">${ps.map(p=>`<label class="check small"><input type="checkbox" class="ce-pref" value="${p}" ${(c.areas||[]).includes(p)?'checked':''}>${p.replace(/[都府県]$/,'')}</label>`).join('')}</div>`).join('')}
+      </details>
       <label class="check small"><input type="checkbox" id="ce-feat" ${c.featured?'checked':''}>おすすめにする（チケット不足のとき・結果画面に出す）</label>
       <label class="check small"><input type="checkbox" id="ce-banner" ${c.banner?'checked':''}>ガチャ画面の上のバナーに出す（PR表示つき）</label>
       <div class="err" id="ceErr"></div>
@@ -1683,7 +1712,7 @@ function saveCase(f){
   const v=id=>$(id).value.trim(),id=f.dataset.id;
   const d={kind:$('#ce-kind').value,cat:v('#ce-cat'),title:v('#ce-title'),client:v('#ce-client'),url:v('#ce-url'),yen:Math.max(0,parseInt(v('#ce-yen'),10)||0),pt:Math.max(0,parseInt(v('#ce-pt'),10)||0),
     share:v('#ce-share'),purpose:v('#ce-purpose'),how:v('#ce-how')||'完了画面',verify:$('#ce-verify').value,note:v('#ce-note'),min:parseInt(v('#ce-min'),10)||0,
-    start:v('#ce-start'),end:v('#ce-end'),cap:Math.max(0,parseInt(v('#ce-cap'),10)||0),featured:$('#ce-feat').checked,banner:$('#ce-banner').checked};
+    start:v('#ce-start'),end:v('#ce-end'),cap:Math.max(0,parseInt(v('#ce-cap'),10)||0),featured:$('#ce-feat').checked,banner:$('#ce-banner').checked,areas:[...document.querySelectorAll('.ce-pref:checked')].map(x=>x.value)};
   const e=[];if(!d.title)e.push('案件名');if(!d.client)e.push('取引先名');if(!d.share)e.push('提供する情報');if(!d.pt)e.push('付与pt');if(d.url&&!/^https?:\/\//.test(d.url))e.push('リンク（https://から）');if(d.start&&d.end&&d.start>d.end)e.push('期間（開始日が終了日より後）');
   if(e.length){$('#ceErr').textContent=e.join('・')+' を確認してください。';return}
   if(id)Object.assign(CS(id),d);else db.cases.unshift({id:'c'+uid(),status:'live',...d});
@@ -1878,6 +1907,7 @@ function viewLogin(){
         <label class="f">ニックネーム<input id="lg-name" autocomplete="nickname" value="デモ太郎" required></label>
         <label class="f">メールアドレス<input id="lg-mail" type="email" autocomplete="email" value="demo@example.com" required></label>
         <label class="f">パスワード<input id="lg-pass" type="password" autocomplete="current-password" value="demodemo"></label>
+        <label class="f">お住まいの都道府県（はじめての方）${prefSelect('lg-pref','',false)}</label>
         <label class="f">招待コード（お持ちの方）<input id="lg-ref" autocapitalize="characters" value="${esc(refFromUrl())}"></label>
         <div class="consent">
           <label class="check small"><input type="checkbox" id="lg-agree"><span><a href="#" data-act="terms">利用規約</a>と<a href="#" data-act="policy">プライバシーポリシー</a>に同意します（必須）</span></label>
@@ -1902,6 +1932,7 @@ function viewLoginShared(mode){
         ${su?'<label class="f">ニックネーム<input id="lg-name" autocomplete="nickname" maxlength="20" required></label><p class="small muted" style="margin-top:-6px">当選者速報には先頭の1文字だけ表示されます。</p>':''}
         <label class="f">メールアドレス<input id="lg-mail" type="email" autocomplete="email" inputmode="email" required></label>
         <label class="f">パスワード（6文字以上）<input id="lg-pass" type="password" autocomplete="${su?'new-password':'current-password'}" minlength="6" required></label>
+        ${su?`<label class="f">お住まいの都道府県${prefSelect('lg-pref','',true)}</label>`:''}
         ${su?`<label class="f">招待コード（お持ちの方）<input id="lg-ref" autocapitalize="characters" value="${esc(refFromUrl())}" placeholder="EX〇〇〇〇〇〇"></label>`:''}
         ${su?`<div class="consent">
           <label class="check small"><input type="checkbox" id="lg-agree"><span><a href="#" data-act="terms">利用規約</a>と<a href="#" data-act="policy">プライバシーポリシー</a>に同意します（必須）</span></label>
@@ -2022,11 +2053,13 @@ function viewTickets(u){
 
     <div class="card" id="cases"><div class="row"><h2>案件</h2><span class="spacer"></span>${u.consent&&u.consent.share?`<button class="btn small ghost" data-act="shareOff">情報提供の同意を取り消す</button>`:''}</div><p class="small muted">リンクから登録・回答して、完了画面のスクショで報告。確認後にポイントが付与されます（${PT_PER_TICKET}ptでチケット1枚）。</p>
       ${!(u.consent&&u.consent.share)?`<div class="shipbox"><b>取引先への情報提供に同意すると、案件が表示されます</b><p class="small muted">回答内容・属性情報・メールアドレス・登録IDを、各案件の依頼元企業に提供します。氏名・住所・電話番号は提供しません。<a href="#" data-act="policy">プライバシーポリシー</a></p><button class="btn small" style="margin-top:8px" data-act="shareOn">同意して案件を見る</button></div>`:`
+      ${u.pref?`<div class="row small" style="margin-top:6px"><span class="muted">お住まい：${esc(u.pref)}</span><button class="linkbtn small" data-act="prefAsk">変更</button></div>`
+        :`<div class="shipbox" style="margin-top:8px"><b>お住まいの都道府県を選ぶと、地域限定の案件も表示されます</b><div class="row" style="margin-top:6px">${prefSelect('pf-pref','',false)}<button class="btn small" data-act="prefSave">保存</button></div></div>`}
       <div class="seg" role="tablist" style="margin-top:10px">${[['all','すべて'],['signup','登録・申込'],['survey','アンケート']].map(([k,l])=>`<button type="button" role="tab" aria-selected="${caseKind===k}" data-act="caseKind" data-k="${k}">${l}</button>`).join('')}</div>
       <div class="chips">${catsNow().map(c=>`<button type="button" class="chip" aria-pressed="${caseCat===c}" data-act="caseCat" data-c="${esc(c)}">${esc(c)}</button>`).join('')}</div>
       <div class="list">
       ${(()=>{const mine=new Set(db.subs.filter(s=>s.email===u.email).map(s=>s.caseId));
-        const list=(db.cases||[]).filter(c=>(caseVisible(c)||mine.has(c.id))&&(caseKind==='all'||(caseKind==='signup')===(c.kind!==S))&&(caseCat==='すべて'||c.cat===caseCat)).sort((a,b)=>(b.featured?1:0)-(a.featured?1:0));
+        const list=(db.cases||[]).filter(c=>(caseFor(c,u)||mine.has(c.id))&&(caseKind==='all'||(caseKind==='signup')===(c.kind!==S))&&(caseCat==='すべて'||c.cat===caseCat)).sort((a,b)=>(b.featured?1:0)-(a.featured?1:0));
         if(!list.length)return '<p class="muted" style="padding-block:12px">この条件の案件は今ありません。</p>';
         return list.map(c=>{const s=latestSub(u.email,c.id);
         const meta=[c.kind===S?`アンケート・約${c.min||3}分`:c.kind,c.cat,c.note].filter(Boolean).map(esc).join('・');
@@ -2161,6 +2194,10 @@ document.addEventListener('click',e=>{
       if(!e.end){toast('終了日を入れてください');return}if(e.conv<=1&&e.scr<=1){toast('倍率を選んでください');return}
       db.settings={...settings(),event:e};save();keepScroll(render);toast('イベントを保存しました')},
     evStop:()=>{const st={...settings()};delete st.event;db.settings=st;save();keepScroll(render);toast('イベントを終了しました')},
+    prefSave:()=>{const v=($('#pf-pref')||{}).value;if(!v){toast('都道府県を選んでください');return}const u=cur();u.pref=v;save();closeModal();keepScroll(render);toast('お住まいを '+v+' にしました')},
+    prefAsk:()=>openModal(`<h3>お住まいの都道府県</h3><p class="small muted">地域限定の案件を表示するために使います。</p><div class="form">${prefSelect('pf-pref',cur().pref,false)}</div><div class="row" style="margin-top:12px"><button class="btn ghost" data-act="close">やめる</button><span class="spacer"></span><button class="btn" data-act="prefSave">保存</button></div>`),
+    areaAll:()=>{document.querySelectorAll('.ce-pref').forEach(x=>x.checked=false)},
+    areaReg:()=>{const ps=(REGIONS.find(r=>r[0]===el.dataset.r)||[0,[]])[1];const on=ps.every(p=>document.querySelector(`.ce-pref[value="${p}"]`).checked);ps.forEach(p=>document.querySelector(`.ce-pref[value="${p}"]`).checked=!on)},
     authMode:()=>Sync.setMode(el.dataset.m),pwReset:()=>Sync.reset(),reload:()=>location.reload(),
     grantTo:()=>{const x=db.users[el.dataset.email];if(x){addTickets(x,10,'管理者から付与');save();keepScroll(render);toast(x.name+'さんに10枚付与しました')}},
     admAdd:()=>{const e=($('#adm-mail').value||'').trim().toLowerCase();if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)){toast('メールアドレスを確認してください');return}Sync.addAdmin(e).then(()=>toast(e+' を管理者にしました')).catch(()=>toast('追加できませんでした'))},
@@ -2252,6 +2289,7 @@ document.addEventListener('submit',e=>{
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 document.addEventListener('change',e=>{const t=e.target;if(t.classList&&t.classList.contains('g-minrank')){const g=G(t.dataset.g);if(!g)return;g.minRank=+t.value||0;if(!g.minRank)delete g.minRank;save();keepScroll(render);toast(g.minRank?RANKS[g.minRank].n+'以上の限定にしました':'全員が引けるようにしました')}});
 document.addEventListener('input',e=>{if(e.target.id==='ce-yen'||e.target.id==='ce-pt')updRate()});
+document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('.areas')){setTimeout(()=>{const l=$('#ce-area-lbl');if(l)l.textContent=areaLabel([...document.querySelectorAll('.ce-pref:checked')].map(x=>x.value))},0)}});
 
 if(SHARED)Sync.boot();else{
 db=load();
