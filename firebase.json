@@ -9,7 +9,10 @@
       "src/**",
       "build.py",
       "**/*.command",
-      "*.zip"
+      "*.zip",
+      "*.cjs",
+      "firebase-web-config.json",
+      "skills-lock.json"
     ],
     "headers": [
       {
