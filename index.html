@@ -22,8 +22,8 @@ img{max-width:100%}
 html,body{overscroll-behavior-y:none}
 </style>
 <script>window.EX_APP=true;</script>
-<meta name="exkuji-build" content="10/21 12:51">
-<script>window.EX_SHARED=true;window.EX_BUILD="版 10/21 12:51";</script>
+<meta name="exkuji-build" content="10/21 23:52">
+<script>window.EX_SHARED=true;window.EX_BUILD="版 10/21 23:52";</script>
 </head>
 
 <body>
@@ -1516,10 +1516,12 @@ document.addEventListener('pointerdown',()=>{if(speechOK||!('speechSynthesis' in
 function speak(t){if(!SND||!('speechSynthesis' in window))return;try{
   const u=new SpeechSynthesisUtterance(String(t).replace(/[!！]+/g,'！').replace(/[〜~]+/g,'ー').replace(/…+/g,'、'));u.lang='ja-JP';u.rate=1.12;u.pitch=1.7;u.volume=.95;
   const v=speechSynthesis.getVoices().find(v=>/^ja/i.test(v.lang));if(v)u.voice=v;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
+// キャラクターはいったんお休み（true にすると表示に戻る）。声だけは出す
+const MASCOT_ON=false;
 const Mascot=(()=>{let el,bub,t1,t2;
   function ensure(){if(el&&document.body.contains(el))return;el=document.createElement('div');el.className='mascot';el.innerHTML=`<div class="m-bub"></div><div class="m-pup">${KAPURU_SVG}</div>`;document.body.appendChild(el);bub=el.querySelector('.m-bub')}
   return {
-    say(text,mood,ms=1800){ensure();el.className='mascot on m-talk'+(mood?' m-'+mood:'');bub.textContent=text;bub.classList.remove('pop');void bub.offsetWidth;bub.classList.add('pop');speak(text);
+    say(text,mood,ms=1800){if(!MASCOT_ON){speak(text);return}ensure();el.className='mascot on m-talk'+(mood?' m-'+mood:'');bub.textContent=text;bub.classList.remove('pop');void bub.offsetWidth;bub.classList.add('pop');speak(text);
       clearTimeout(t1);t1=setTimeout(()=>el&&el.classList.remove('m-talk'),Math.min(1600,350+String(text).length*95));clearTimeout(t2);if(ms)t2=setTimeout(()=>Mascot.hide(),ms)},
     hide(){clearTimeout(t2);el&&el.classList.remove('on')}
   }})();
