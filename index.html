@@ -22,8 +22,8 @@ img{max-width:100%}
 html,body{overscroll-behavior-y:none}
 </style>
 <script>window.EX_APP=true;</script>
-<meta name="exkuji-build" content="10/20 17:38">
-<script>window.EX_SHARED=true;window.EX_BUILD="版 10/20 17:38";</script>
+<meta name="exkuji-build" content="10/21 12:33">
+<script>window.EX_SHARED=true;window.EX_BUILD="版 10/21 12:33";</script>
 </head>
 
 <body>
@@ -561,6 +561,39 @@ header.top .wrap{gap:8px}
 @keyframes popout{to{transform:translateY(20px) scale(2.4);opacity:0;filter:brightness(1.8)}}
 body.drawing .pull,body.drawing .gcard{pointer-events:none}
 body.drawing .pulls{opacity:.6}
+
+/* ステップアップ予告 */
+.stepfx{position:fixed;inset:0;z-index:75;display:grid;place-items:center;background:radial-gradient(circle at 50% 45%,color-mix(in srgb,var(--sc,#fff) 22%,transparent),rgba(3,8,20,.88) 62%);opacity:0;transition:opacity .18s;cursor:pointer;overflow:hidden}
+.stepfx.on{opacity:1}
+.stepfx.hot{animation:quake .32s ease-in-out 2}
+.st-in{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:0 16px}
+.st-lab{font-family:var(--display);font-size:22px;letter-spacing:.3em;color:var(--sc);opacity:.85}
+.st-txt{font-family:var(--display);font-size:clamp(40px,12vw,68px);line-height:1.05;color:var(--sc);text-shadow:0 0 22px var(--sc),0 5px 0 rgba(0,0,0,.45)}
+.st-txt.pop{animation:stpop .42s cubic-bezier(.2,1.6,.4,1)}
+.stepfx.rainbow .st-txt,.stepfx.rainbow .st-lab{background:linear-gradient(90deg,#ff5f6d,#ffc371,#fff36b,#7cf29a,#5fd3ff,#a78bfa,#ff5fa2);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 0 14px rgba(255,255,255,.7))}
+.stepfx.rainbow{background:conic-gradient(from 0deg at 50% 45%,rgba(255,95,109,.35),rgba(255,195,113,.35),rgba(255,243,107,.35),rgba(124,242,154,.35),rgba(95,211,255,.35),rgba(167,139,250,.35),rgba(255,95,162,.35),rgba(255,95,109,.35)),rgba(3,8,20,.85)}
+.st-dots{display:flex;gap:10px}.st-dots i{width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.15);transition:background .2s,box-shadow .2s}
+.st-dots i.on{background:var(--sc);box-shadow:0 0 12px var(--sc)}
+.st-ring{position:absolute;left:50%;top:45%;width:60px;height:60px;margin:-30px 0 0 -30px;border-radius:50%;border:4px solid var(--sc);opacity:0}
+.st-ring.go{animation:ring .6s ease-out}
+@keyframes stpop{0%{transform:scale(2.4);opacity:0;filter:blur(6px)}60%{transform:scale(.92);opacity:1;filter:none}100%{transform:scale(1)}}
+@keyframes ring{0%{transform:scale(.5);opacity:.9}100%{transform:scale(7);opacity:0}}
+@keyframes quake{0%,100%{transform:translate(0,0)}20%{transform:translate(-6px,3px)}40%{transform:translate(5px,-4px)}60%{transform:translate(-4px,-2px)}80%{transform:translate(4px,3px)}}
+/* カットイン */
+.fx-cut{position:absolute;left:-15%;right:-15%;top:22%;height:110px;z-index:6;display:grid;place-items:center;pointer-events:none;transform:skewY(-9deg);
+  background:linear-gradient(90deg,transparent,var(--cutc) 14%,var(--cutc) 86%,transparent);box-shadow:0 0 40px var(--cutc);animation:cutin 1.25s cubic-bezier(.2,.9,.3,1) forwards}
+.fx-cut b{font-family:var(--display);font-size:clamp(44px,13vw,72px);color:#fff;letter-spacing:.06em;text-shadow:0 4px 0 rgba(0,0,0,.35),0 0 18px rgba(255,255,255,.6);transform:skewY(9deg)}
+.fx-cut.hot{--cutc:#E8213A}.fx-cut.hot b{color:#FFE36B}
+.fx-cut.chance{--cutc:#2F7BFF}
+@keyframes cutin{0%{translate:-115% 0}16%{translate:0 0}80%{translate:0 0;opacity:1}100%{translate:115% 0;opacity:.6}}
+.fx.quake .fx-stage{animation:quake .3s ease-in-out 3}
+/* 色が上がる瞬間 */
+.fx.climb .fx-flash{animation:flash .45s}
+.fx.climb .fx-cap{animation:climbpop .35s ease-out}
+@keyframes climbpop{0%{scale:1}40%{scale:1.18}100%{scale:1}}
+.fx.tease .fx-rays{opacity:.3}
+.fx.t3.tease .fx-stage,.fx.t2.tease .fx-stage{animation:throb .5s ease-in-out infinite}
+.stepfx.rainbow .st-txt{font-size:clamp(34px,10.5vw,60px);white-space:nowrap}
 </style>
 
 <header class="top" id="hdr" hidden>
@@ -1090,6 +1123,9 @@ const sfx={
   click:()=>{tone(1900,.025,'square',.06);tone(240,.04,'square',.07,.01)},
   thud:()=>{tone(120,.16,'sine',.25,0,60);tone(420,.06,'triangle',.08,.02)},
   bounce:k=>tone(300-k*40,.07,'sine',.12-k*.03),
+  step:k=>{const f=[392,523,659,784,1047][k-1]||1047;tone(f,.22,'square',.07);tone(f*1.5,.3,'triangle',.06,.06);if(k>=4)tone(f*2,.5,'sine',.05,.12)},
+  cut:hot=>{tone(200,.35,'sawtooth',.05,0,1600);tone(hot?880:660,.18,'square',.09,.3);tone(hot?1320:990,.4,'square',.07,.42)},
+  climb:k=>{tone(500+k*220,.16,'square',.07);tone(1000+k*440,.25,'triangle',.05,.05)},
   rankup:()=>[523,659,784,1047,784,1047,1319].forEach((f,i)=>tone(f,.2,'square',.06,i*.1)),
   scratch:()=>tone(1800+Math.random()*600,.03,'sawtooth',.015)
 };
@@ -1302,6 +1338,29 @@ async function animCrank(m){
   [120,330,560,800].forEach(t=>setTimeout(sfx.click,t));
   await sleep(1000);m.classList.remove('crank');
 }
+
+// 煽り：段階が上がるほどアツい。虹は大当たり確定。どの段階も、実際の結果に合わせて出る確率を変えている
+const STEPS=[{t:'…',c:'#FFFFFF'},{t:'チャンス？',c:'#5FA8FF'},{t:'チャンス！',c:'#4BE08A'},{t:'激アツ!!',c:'#FF4B5C'},{t:'大当たり確定!!',c:'rainbow'}];
+function pickSteps(tier){const r=Math.random();
+  if(tier>=3)return r<.45?5:r<.85?4:3;
+  if(tier===2)return r<.55?4:r<.9?3:2;
+  if(tier===1)return r<.12?4:r<.55?3:2;
+  return r<.04?3:r<.35?2:1}
+async function animSteps(n){
+  if(n<=1&&Math.random()<.5)return;
+  const el=document.createElement('div');el.className='stepfx';
+  el.innerHTML=`<div class="st-in"><div class="st-lab">STEP</div><div class="st-txt"></div><div class="st-dots">${STEPS.map(()=>'<i></i>').join('')}</div></div><div class="st-ring"></div>`;
+  document.body.appendChild(el);let skip=false;el.addEventListener('click',()=>skip=true);
+  requestAnimationFrame(()=>el.classList.add('on'));
+  for(let k=1;k<=n&&!skip;k++){const st=STEPS[k-1];
+    el.style.setProperty('--sc',st.c==='rainbow'?'#FFE36B':st.c);el.classList.toggle('rainbow',st.c==='rainbow');
+    el.querySelector('.st-lab').textContent='STEP '+k;const tx=el.querySelector('.st-txt');tx.textContent=st.t;
+    [...el.querySelectorAll('.st-dots i')].forEach((d,i)=>d.classList.toggle('on',i<k));
+    tx.classList.remove('pop');el.querySelector('.st-ring').classList.remove('go');void tx.offsetWidth;tx.classList.add('pop');el.querySelector('.st-ring').classList.add('go');
+    el.classList.toggle('hot',k>=4);sfx.step(k);try{if(k>=4&&navigator.vibrate)navigator.vibrate(k===5?[80,40,80]:50)}catch(e){}
+    await sleep(k===n?(n>=4?820:560):420)}
+  el.classList.remove('on');await sleep(200);el.remove();
+}
 // ③ カプセルがゴトンと出てくる
 async function animDrop(m,color){
   const d=m.querySelector('.drop');d.style.setProperty('--c',color);
@@ -1335,6 +1394,7 @@ async function doDraw(count){
   if(results.kiri.length&&fxTier(bestId)<2)bestId='K';
   if(anim&&document.body.contains(m)){
     await animCrank(m);
+    await animSteps(pickSteps(fxTier(bestId)));
     // B賞以上はふつうの色で出てきて、開封演出の中で本当の色に変わる
     await animDrop(m,fxTier(bestId)>=2?rankColor('E'):rankColor(bestId));
     Draw.on=false;document.body.classList.remove('drawing');
@@ -1349,7 +1409,12 @@ function cssColor(v){const m=/var\((--[\w-]+)\)/.exec(v);return m?getComputedSty
 function playFx(g,results,lastOne,boxNo,bestId){
   const tier=fxTier(bestId),p=prizeOf(g.id,bestId),final=rankColor(bestId),n=results.length;
   // 昇格演出：B賞以上は青いカプセルで落ちてきて、揺れたあと本当の色に変わる
-  const start=tier>=2?rankColor('E'):final;
+  const start=rankColor('E');
+  // タップするたびに色が1段ずつ上がって、3回目で本当の色になる
+  const ORD=['E','D','C','B','A'],fi=bestId==='L'?5:bestId==='K'?3:Math.max(0,ORD.indexOf(bestId));
+  const ladder=[0,1,2].map(k=>{const i=Math.min(4,Math.round(fi*k/3));return i>=fi&&k>0?null:rankColor(ORD[i])}).concat([final]);
+  // カットイン：アツいほど出やすい（確定ではない）
+  const cr=Math.random(),cut=tier>=3?(cr<.7?'hot':cr<.95?'chance':''):tier===2?(cr<.45?'hot':cr<.85?'chance':''):tier===1?(cr<.1?'hot':cr<.4?'chance':''):(cr<.03?'hot':cr<.15?'chance':'');
   const text=bestId==='L'?'var(--cap-a)':final;
   const head=bestId==='L'?'ラストワン賞！':bestId==='K'?`${results.kiri[0]}回目！キリ番賞`:tier===3?'大当たり！':tier===2?'当たり！':n>1?`${n}連の最高ランク`:'';
   const root=document.createElement('div');root.className='fx t'+tier;root.setAttribute('role','dialog');root.setAttribute('aria-label','抽選の演出');
@@ -1366,20 +1431,23 @@ function playFx(g,results,lastOne,boxNo,bestId){
   document.body.appendChild(root);
   let stage='intro',taps=0;
   const done=()=>{if(!fx||fx.root!==root)return;['t1','t2','t3','t4','t5'].forEach(k=>clearTimeout(fx[k]));cancelAnimationFrame(fx.raf);fx=null;root.classList.add('out');setTimeout(()=>root.remove(),250);showResults(g,results,lastOne,boxNo)};
-  const openNow=()=>{if(stage==='open')return;stage='open';clearTimeout(fx.t3);root.classList.remove('wait');root.classList.add('open');sfx.open(tier);try{if(tier>=2&&navigator.vibrate)navigator.vibrate(tier===3?[60,40,120]:60)}catch(e){}
+  const openNow=()=>{if(stage==='open')return;stage='open';clearTimeout(fx.t3);root.classList.remove('wait');if(final!==start){root.style.setProperty('--cc',final);root.classList.add('promo');if(tier>=2)sfx.promo()}root.classList.add('open');sfx.open(tier);try{if(tier>=2&&navigator.vibrate)navigator.vibrate(tier===3?[60,40,120]:60)}catch(e){}
     burst(root.querySelector('.fx-cv'),tier,cssColor(final==='var(--cap-l)'?'var(--cap-a)':final));fx.t4=setTimeout(done,tier===3?4200:tier===2?3200:2200)};
   fx={root,done,raf:0};
   root.addEventListener('click',e=>{
     if(e.target.closest('.fx-skip')){done();return}
-    if(stage==='wait'){taps++;root.dataset.taps=taps;sfx.tap(taps);root.querySelector('.fx-tap em').textContent=3-taps;
+    if(stage==='wait'){taps++;root.dataset.taps=taps;sfx.tap(taps);root.querySelector('.fx-tap em').textContent=Math.max(0,3-taps);
+      const nc=ladder[Math.min(3,taps)];if(nc&&taps<3&&nc!==root.style.getPropertyValue('--cc')){root.style.setProperty('--cc',nc);root.classList.remove('climb');void root.offsetWidth;root.classList.add('climb');setTimeout(()=>root.classList.remove('climb'),380);setTimeout(()=>sfx.climb(taps),60)}
       const c=root.querySelector('.fx-cap');c.classList.remove('hit');void c.offsetWidth;c.classList.add('hit');if(taps>=3)fx.t5=setTimeout(openNow,180)}
     else if(stage==='open')done();
   });
   requestAnimationFrame(()=>requestAnimationFrame(()=>root.classList.add('in')));
   setTimeout(sfx.drop,450);
-  if(tier>=2)fx.t1=setTimeout(()=>{root.classList.add('promo');sfx.promo()},1750);
+  if(tier>=2)fx.t1=setTimeout(()=>{root.classList.add('tease')},1750);
   // 落ちて揺れたら、タップ待ち（6秒さわらなければ自動で開く）
-  fx.t2=setTimeout(()=>{stage='wait';root.classList.add('dropped','wait');fx.t3=setTimeout(openNow,6000)},tier>=2?2500:1800);
+  fx.t2=setTimeout(()=>{stage='wait';root.classList.add('dropped','wait');fx.t3=setTimeout(openNow,7000);
+    if(cut){const c=document.createElement('div');c.className='fx-cut '+cut;c.innerHTML=`<b>${cut==='hot'?'激アツ!!':'チャンス!'}</b>`;root.appendChild(c);root.classList.add('quake');sfx.cut(cut==='hot');
+      try{if(cut==='hot'&&navigator.vibrate)navigator.vibrate([60,30,60])}catch(e){}setTimeout(()=>{root.classList.remove('quake');c.remove()},1300)}},tier>=2?2500:1800);
 }
 function burst(cv,tier,color){
   const dpr=Math.min(2,window.devicePixelRatio||1),W=cv.clientWidth,H=cv.clientHeight;cv.width=W*dpr;cv.height=H*dpr;
