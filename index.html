@@ -22,8 +22,8 @@ img{max-width:100%}
 html,body{overscroll-behavior-y:none}
 </style>
 <script>window.EX_APP=true;</script>
-<meta name="exkuji-build" content="10/21 12:33">
-<script>window.EX_SHARED=true;window.EX_BUILD="版 10/21 12:33";</script>
+<meta name="exkuji-build" content="10/21 12:51">
+<script>window.EX_SHARED=true;window.EX_BUILD="版 10/21 12:51";</script>
 </head>
 
 <body>
@@ -594,6 +594,83 @@ body.drawing .pulls{opacity:.6}
 .fx.tease .fx-rays{opacity:.3}
 .fx.t3.tease .fx-stage,.fx.t2.tease .fx-stage{animation:throb .5s ease-in-out infinite}
 .stepfx.rainbow .st-txt{font-size:clamp(34px,10.5vw,60px);white-space:nowrap}
+
+/* マスコット */
+.mascot{--kc:#FF6B8A;--kc2:#FFB4C2;position:fixed;left:10px;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:95;width:110px;pointer-events:none;transform:translateY(160%) rotate(-8deg);transition:transform .45s cubic-bezier(.3,1.6,.5,1)}
+.mascot.on{transform:translateY(0) rotate(0)}
+.mascot .m-pup{transform-origin:50% 100%;animation:puppet 1.6s ease-in-out infinite}
+.mascot.m-talk .m-pup{animation:puppetTalk .28s ease-in-out infinite}
+.mascot .k-mouth{transform-origin:70px 100px;transition:transform .12s}
+.mascot.m-talk .k-mouth{animation:mouth .22s ease-in-out infinite}
+.mascot.m-wow .k-mouth{transform:scale(1.15,1.9)}.mascot.m-wow .k-pups{transform:translateY(-3px)}
+.mascot .k-lid,.mascot .k-star{opacity:0;transition:opacity .2s}
+.mascot.m-sad .k-lid{opacity:1}.mascot.m-sad .k-mouth{transform:scale(.7,.5)}
+.mascot.m-joy .k-star{opacity:1}.mascot.m-joy .k-pups{opacity:0}
+.mascot.m-joy .k-armL{animation:waveL .35s ease-in-out infinite}.mascot.m-joy .k-armR{animation:waveR .35s ease-in-out infinite}
+.mascot .k-arm{transform-box:fill-box}
+.m-bub{position:absolute;left:84px;bottom:92px;min-width:120px;max-width:min(62vw,240px);padding:9px 13px;border-radius:16px 16px 16px 4px;background:#fff;color:#1A1A1A;font-weight:800;font-size:14px;line-height:1.35;box-shadow:0 6px 20px rgba(0,0,0,.35);white-space:normal}
+.m-bub:empty{display:none}.m-bub.pop{animation:bubpop .3s cubic-bezier(.3,1.7,.5,1)}
+@keyframes puppet{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg) translateY(-3px)}}
+@keyframes puppetTalk{0%,100%{transform:rotate(-4deg) translateY(0)}50%{transform:rotate(4deg) translateY(-6px)}}
+@keyframes mouth{0%,100%{transform:scale(1,1)}50%{transform:scale(1.05,1.9)}}
+@keyframes waveL{0%,100%{transform:rotate(0)}50%{transform:rotate(-25deg)}}@keyframes waveR{0%,100%{transform:rotate(0)}50%{transform:rotate(25deg)}}
+@keyframes bubpop{0%{transform:scale(.4);opacity:0}100%{transform:scale(1);opacity:1}}
+/* フリーズ */
+.freeze{position:fixed;inset:0;z-index:96;background:#000;display:grid;place-items:center;cursor:default}
+.fz-dots{color:rgba(255,255,255,.25);font-size:28px;letter-spacing:.4em;animation:fzblink 1s steps(2) infinite}
+.fz-txt{position:absolute;display:flex;flex-direction:column;align-items:center;gap:6px;opacity:0}
+.fz-txt b{font-family:var(--display);font-size:clamp(48px,15vw,90px);background:linear-gradient(90deg,#ff5f6d,#ffc371,#fff36b,#7cf29a,#5fd3ff,#a78bfa,#ff5fa2);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 18px rgba(255,255,255,.8))}
+.fz-txt span{color:#fff;font-weight:800;letter-spacing:.2em}
+.freeze.boom{animation:fzflash .6s ease-out}.freeze.boom .fz-dots{display:none}.freeze.boom .fz-txt{opacity:1;animation:stpop .5s cubic-bezier(.2,1.6,.4,1)}
+.freeze.out{opacity:0;transition:opacity .25s}
+@keyframes fzblink{50%{opacity:.2}}@keyframes fzflash{0%{background:#fff}100%{background:#000}}
+/* 金色のガチャ機 */
+.machine.golden{--machine:#FFC83D;--machine-2:#B8860B;filter:drop-shadow(0 0 22px rgba(255,210,90,.9))}
+.machine.golden .dome{border-color:#FFD25A;box-shadow:0 0 40px rgba(255,210,90,.9),inset 0 -24px 40px rgba(0,0,0,.35)}
+.machine.golden .body::after{content:"";position:absolute;inset:0;border-radius:inherit;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.75) 50%,transparent 70%);background-size:250% 100%;animation:shine 1s linear infinite;pointer-events:none}
+@keyframes shine{from{background-position:120% 0}to{background-position:-120% 0}}
+/* 逆転 */
+.fx-fake,.fx-rev{position:absolute;z-index:7;display:none;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
+.fx-fake{top:60%}.fx-fake b{font-size:22px;color:rgba(255,255,255,.7)}
+.fx.fakeopen .fx-fake{display:flex;animation:bubpop .3s}
+.fx.fakeopen .fx-top{transform:translateY(-130px) rotate(-28deg);opacity:0}.fx.fakeopen .fx-bot{transform:translateY(130px) rotate(18deg);opacity:0}
+.fx.fakeopen .fx-tap,.fx.fakeopen .fx-label{display:none}
+.fx.reverse{animation:quake .3s ease-in-out 4}
+.fx.reverse .fx-rev{display:flex;inset:0;justify-content:center;background:radial-gradient(circle,rgba(255,40,60,.45),rgba(0,0,0,.6))}
+.fx-rev b{font-family:var(--display);font-size:clamp(40px,12vw,70px);color:#FFE36B;text-shadow:0 0 20px #FF2A48,0 5px 0 #000;transform:rotate(-8deg);animation:stpop .45s cubic-bezier(.2,1.6,.4,1)}
+.fx.reverse .fx-flash{animation:flash .5s}
+/* ラストワン */
+.fx-fw{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}
+.fx.lastone .fx-rays{background:repeating-conic-gradient(from 0deg,rgba(255,236,150,.32) 0 8deg,transparent 8deg 22deg)!important;animation:spin 6s linear infinite;opacity:1}
+.fx.lastone.open .fx-head{font-size:clamp(34px,10vw,52px)}
+.lastcount{display:flex;align-items:baseline;gap:10px;justify-content:center;padding:8px 14px;border-radius:14px;background:linear-gradient(90deg,#FF2A48,#FF9F1C);color:#fff;box-shadow:0 0 24px rgba(255,60,80,.6);animation:pulse 1s ease-in-out infinite}
+.lastcount b{font-family:var(--display);font-size:20px;letter-spacing:.15em}.lastcount .num{font-family:var(--display);font-size:34px;line-height:1}.lastcount small{font-weight:700}
+.lastb{--rc:#FF5A5A;color:#fff!important;animation:pulse 1s ease-in-out infinite}
+/* 10連を1個ずつ */
+.mopen{position:fixed;inset:0;z-index:72;background:rgba(4,10,22,.94);display:flex;flex-direction:column;justify-content:center;gap:22px;padding:20px 16px;animation:bubpop .25s}
+.mopen.out{opacity:0;transition:opacity .25s}
+.mo-head{text-align:center;display:flex;flex-direction:column;gap:4px;color:#fff}.mo-head b{font-size:40px}
+.mo-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;max-width:420px;margin:0 auto;width:100%}
+.mo-cap{position:relative;aspect-ratio:1;border:0;padding:0;background:none;cursor:pointer;animation:mofall .45s cubic-bezier(.3,1.5,.5,1) both}
+.mo-top,.mo-bot{position:absolute;left:0;right:0;height:50%;transition:transform .35s,opacity .35s}
+.mo-top{top:0;border-radius:999px 999px 0 0;background:var(--c)}.mo-bot{bottom:0;border-radius:0 0 999px 999px;background:#F4F6F9}
+.mo-cap b{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--display);font-size:26px;color:var(--c);opacity:0;transition:opacity .2s .1s;text-shadow:0 0 12px var(--c)}
+.mo-cap.open .mo-top{transform:translateY(-40%) rotate(-25deg);opacity:0}.mo-cap.open .mo-bot{transform:translateY(40%) rotate(15deg);opacity:0}.mo-cap.open b{opacity:1}
+.mo-cap.big b{font-size:34px;animation:pulse .8s ease-in-out infinite}
+.mo-cap.glow{animation:wobble .5s ease-in-out infinite;filter:drop-shadow(0 0 16px #FFD25A)}
+@keyframes mofall{0%{transform:translateY(-60vh)}100%{transform:none}}
+/* 速報 */
+.bignews{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top,0px));translate:-50% 0;z-index:94;width:min(94vw,460px);display:flex;align-items:center;gap:10px;padding:10px 12px;border:0;border-radius:18px;text-align:left;cursor:pointer;
+  background:linear-gradient(90deg,#FF2A48,#FF9F1C,#FFD25A);color:#111;box-shadow:0 10px 40px rgba(255,80,60,.6);animation:newsin .5s cubic-bezier(.3,1.5,.5,1)}
+.bignews.out{opacity:0;transform:translateY(-30px);transition:all .35s}
+.bn-lab{font-family:var(--display);font-size:16px;background:#111;color:#FFD25A;padding:6px 8px;border-radius:10px;animation:fzblink .6s steps(2) infinite}
+.bn-img img{width:46px;height:46px;border-radius:10px;object-fit:cover;display:block}
+.bn-t{display:flex;flex-direction:column;gap:2px;min-width:0}.bn-t b{font-size:15px}.bn-t span{font-size:12px;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@keyframes newsin{0%{transform:translateY(-120%) scale(.9)}100%{transform:none}}
+
+.m-bub{width:max-content;min-width:0}
+.fx-fake .fx-dot{background:var(--c)!important;color:#fff}
+.fx.fakeopen .fx-crack{opacity:0!important}
 </style>
 
 <header class="top" id="hdr" hidden>
@@ -910,6 +987,7 @@ const Sync=(()=>{
       if(inflight[k]){if(!held[k]||v>(held[k]._v||0))held[k]=d;return}
       if(v<(ver[k]||0))return;
       const sv=noV(d),s=J(sv);if(s===base[k]){ver[k]=v;return}
+      if(!(k in base)&&k.startsWith('winners/')&&S.state==='ready'&&(d.pid==='A'||d.pid==='L')&&Math.abs(now()-(d.at||0))<180000&&!(cur()&&d.name===cur().name&&Draw.lastAt&&Date.now()-Draw.lastAt<60000))setTimeout(()=>bigNews(sv),400);
       const loc=unitOf(k),b=base[k]!=null?JSON.parse(base[k]):null;
       const m=loc&&b?merge3(sv,b,loc):sv;
       base[k]=s;ver[k]=v;applyUnit(k,m);if(J(m)!==s)push();changed();
@@ -1126,6 +1204,11 @@ const sfx={
   step:k=>{const f=[392,523,659,784,1047][k-1]||1047;tone(f,.22,'square',.07);tone(f*1.5,.3,'triangle',.06,.06);if(k>=4)tone(f*2,.5,'sine',.05,.12)},
   cut:hot=>{tone(200,.35,'sawtooth',.05,0,1600);tone(hot?880:660,.18,'square',.09,.3);tone(hot?1320:990,.4,'square',.07,.42)},
   climb:k=>{tone(500+k*220,.16,'square',.07);tone(1000+k*440,.25,'triangle',.05,.05)},
+  premium:()=>{tone(55,1.2,'sawtooth',.12,0,40);tone(110,1.2,'square',.05,0,80);[523,659,784,1047,1319,1568,2093].forEach((f,i)=>tone(f,.5,'triangle',.07,.5+i*.07))},
+  reverse:()=>{tone(1800,.08,'square',.08);tone(90,.5,'sawtooth',.1,.05,40);tone(880,.25,'square',.08,.35);tone(1320,.4,'square',.07,.5)},
+  pop:k=>{tone(600+k*90,.08,'triangle',.12);tone(1200+k*120,.12,'sine',.06,.04)},
+  sparkle:()=>[1568,2093,2637,3136].forEach((f,i)=>tone(f,.18,'sine',.05,i*.06)),
+  news:()=>{[784,988,1175,1568].forEach((f,i)=>tone(f,.16,'square',.06,i*.08))},
   rankup:()=>[523,659,784,1047,784,1047,1319].forEach((f,i)=>tone(f,.2,'square',.06,i*.1)),
   scratch:()=>tone(1800+Math.random()*600,.03,'sawtooth',.015)
 };
@@ -1333,7 +1416,8 @@ async function animInsert(m,n){
   await Promise.all(flies);await sleep(120);m.classList.remove('insert');
 }
 // ② レバーをガチャガチャ回す
-async function animCrank(m){
+async function animCrank(m,golden){
+  if(golden){m.classList.add('golden');sfx.sparkle();Mascot.say('ガチャが金色に!?','wow',1600)}else Mascot.say('まわせ〜！','',1200);
   m.classList.remove('crank');void m.offsetWidth;m.classList.add('crank');sfx.crank();
   [120,330,560,800].forEach(t=>setTimeout(sfx.click,t));
   await sleep(1000);m.classList.remove('crank');
@@ -1357,7 +1441,7 @@ async function animSteps(n){
     el.querySelector('.st-lab').textContent='STEP '+k;const tx=el.querySelector('.st-txt');tx.textContent=st.t;
     [...el.querySelectorAll('.st-dots i')].forEach((d,i)=>d.classList.toggle('on',i<k));
     tx.classList.remove('pop');el.querySelector('.st-ring').classList.remove('go');void tx.offsetWidth;tx.classList.add('pop');el.querySelector('.st-ring').classList.add('go');
-    el.classList.toggle('hot',k>=4);sfx.step(k);try{if(k>=4&&navigator.vibrate)navigator.vibrate(k===5?[80,40,80]:50)}catch(e){}
+    el.classList.toggle('hot',k>=4);sfx.step(k);if(k>=2)Mascot.say(['','チャンスかも？','チャンス！','激アツだよ!!','虹きた!!大当たり確定!!'][k-1],k>=4?'wow':'',k===n?1600:0);try{if(k>=4&&navigator.vibrate)navigator.vibrate(k===5?[80,40,80]:50)}catch(e){}
     await sleep(k===n?(n>=4?820:560):420)}
   el.classList.remove('on');await sleep(200);el.remove();
 }
@@ -1377,8 +1461,9 @@ async function doDraw(count){
   if(!canDraw(u0,g0)||(g0.newbieHours&&count>newbieLeft(u0,g0)))return;
   const rk0=rankOf(u0.stats.draws).n;
   const m=$('#machine'),anim=!!m&&!reduceMotion();
-  Draw.on=true;document.body.classList.add('drawing');
+  Draw.on=true;Draw.lastAt=Date.now();document.body.classList.add('drawing');
   // 投入のアニメーションと、BOXから引く処理（共有版は通信）を同時に進める
+  if(anim)Mascot.say(count>1?`${count}連いっくよ〜！`:'いっくよ〜！','',1300);
   const ins=anim?animInsert(m,cost):Promise.resolve();
   let r;
   if(SHARED){r=undefined;try{r=await Sync.drawTx(g0.id,g=>boxDraw(g,count,u0.name))}catch(e){console.warn(e);r=undefined}}
@@ -1393,20 +1478,110 @@ async function doDraw(count){
   let bestId=lastOne?'L':results.reduce((a,p)=>p.id<a.id?p:a,results[0]).id;
   if(results.kiri.length&&fxTier(bestId)<2)bestId='K';
   if(anim&&document.body.contains(m)){
-    await animCrank(m);
-    await animSteps(pickSteps(fxTier(bestId)));
+    const tier=fxTier(bestId),fr=Math.random(),freeze=tier>=3&&fr<.1;
+    if(freeze)await animFreeze();
+    const gr=Math.random(),golden=freeze||(tier>=3?gr<.4:tier===2?gr<.15:tier===1?gr<.03:false);
+    await animCrank(m,golden);
+    await animSteps(freeze?5:pickSteps(tier));
     // B賞以上はふつうの色で出てきて、開封演出の中で本当の色に変わる
     await animDrop(m,fxTier(bestId)>=2?rankColor('E'):rankColor(bestId));
     Draw.on=false;document.body.classList.remove('drawing');
-    playFx(g,results,lastOne,boxNo,bestId);
-    setTimeout(()=>m.classList.remove('dropping','popout'),400);
+    if(count>=2&&count<=10)openMulti(g,results,lastOne,boxNo,bestId);else playFx(g,results,lastOne,boxNo,bestId,{god:freeze});
+    setTimeout(()=>m.classList.remove('dropping','popout','golden'),400);
   }else{Draw.on=false;document.body.classList.remove('drawing');showResults(g,results,lastOne,boxNo)}
 }
+
+/* ---------- マスコット「カプル」（フェルトのパペット）としゃべる演出 ---------- */
+const KAPURU_SVG=`<svg viewBox="0 0 140 150" aria-hidden="true"><defs>
+  <filter id="kfelt" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency="1.4" numOctaves="2" seed="3" result="n"/>
+  <feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G" result="d"/>
+  <feTurbulence type="fractalNoise" baseFrequency="2.6" numOctaves="1" seed="9" result="n2"/><feColorMatrix in="n2" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .25 0" result="g"/>
+  <feComposite in="g" in2="d" operator="in" result="gi"/><feMerge><feMergeNode in="d"/><feMergeNode in="gi"/></feMerge></filter></defs>
+  <g class="k-body" filter="url(#kfelt)">
+    <path d="M70 18 q-8 -14 2 -16 q4 9 -2 16 M70 18 q8 -15 16 -10 q-7 6 -16 10 M70 18 q-13 -9 -18 -2 q9 2 18 2" fill="var(--kc2)"/>
+    <path d="M18 84 C18 42 40 20 70 20 C100 20 122 42 122 84 Z" fill="var(--kc)"/>
+    <rect x="16" y="80" width="108" height="10" rx="5" fill="#E9DCC6"/>
+    <path d="M20 88 L120 88 C120 126 98 144 70 144 C42 144 20 126 20 88 Z" fill="#FFF4E2"/>
+    <ellipse cx="33" cy="74" rx="9" ry="6" fill="#FF9AAE" opacity=".85"/><ellipse cx="107" cy="74" rx="9" ry="6" fill="#FF9AAE" opacity=".85"/>
+    <g class="k-mouth"><ellipse cx="70" cy="108" rx="22" ry="9" fill="#7A1E33"/><ellipse cx="70" cy="113" rx="11" ry="4" fill="#FF7A8C"/></g>
+    <path class="k-arm k-armL" d="M22 104 q-14 4 -16 -10" stroke="#FFF4E2" stroke-width="10" stroke-linecap="round" fill="none"/>
+    <path class="k-arm k-armR" d="M118 104 q14 4 16 -10" stroke="#FFF4E2" stroke-width="10" stroke-linecap="round" fill="none"/>
+  </g>
+  <g class="k-eyes"><circle cx="50" cy="46" r="17" fill="#fff" stroke="#DADADA" stroke-width="2"/><circle cx="90" cy="46" r="17" fill="#fff" stroke="#DADADA" stroke-width="2"/>
+    <g class="k-pups"><circle cx="52" cy="49" r="7.5" fill="#1A1A1A"/><circle cx="88" cy="49" r="7.5" fill="#1A1A1A"/><circle cx="55" cy="46" r="2.4" fill="#fff"/><circle cx="91" cy="46" r="2.4" fill="#fff"/></g>
+    <path class="k-lid" d="M33 44 Q50 26 67 44 Z M73 44 Q90 26 107 44 Z" fill="var(--kc)"/>
+    <g class="k-star" fill="#FFD25A"><path d="M50 36 l3 7 7 1 -5 5 1 7 -6 -3 -6 3 1 -7 -5 -5 7 -1z"/><path d="M90 36 l3 7 7 1 -5 5 1 7 -6 -3 -6 3 1 -7 -5 -5 7 -1z"/></g></g></svg>`;
+let speechOK=false;
+document.addEventListener('pointerdown',()=>{if(speechOK||!('speechSynthesis' in window))return;speechOK=true;try{const u=new SpeechSynthesisUtterance(' ');u.volume=0;speechSynthesis.speak(u)}catch(e){}},{once:true});
+function speak(t){if(!SND||!('speechSynthesis' in window))return;try{
+  const u=new SpeechSynthesisUtterance(String(t).replace(/[!！]+/g,'！').replace(/[〜~]+/g,'ー').replace(/…+/g,'、'));u.lang='ja-JP';u.rate=1.12;u.pitch=1.7;u.volume=.95;
+  const v=speechSynthesis.getVoices().find(v=>/^ja/i.test(v.lang));if(v)u.voice=v;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
+const Mascot=(()=>{let el,bub,t1,t2;
+  function ensure(){if(el&&document.body.contains(el))return;el=document.createElement('div');el.className='mascot';el.innerHTML=`<div class="m-bub"></div><div class="m-pup">${KAPURU_SVG}</div>`;document.body.appendChild(el);bub=el.querySelector('.m-bub')}
+  return {
+    say(text,mood,ms=1800){ensure();el.className='mascot on m-talk'+(mood?' m-'+mood:'');bub.textContent=text;bub.classList.remove('pop');void bub.offsetWidth;bub.classList.add('pop');speak(text);
+      clearTimeout(t1);t1=setTimeout(()=>el&&el.classList.remove('m-talk'),Math.min(1600,350+String(text).length*95));clearTimeout(t2);if(ms)t2=setTimeout(()=>Mascot.hide(),ms)},
+    hide(){clearTimeout(t2);el&&el.classList.remove('on')}
+  }})();
+
+/* ---------- ② フリーズ（大当たりのときだけ・めったに出ない） ---------- */
+async function animFreeze(){
+  const el=document.createElement('div');el.className='freeze';el.innerHTML='<div class="fz-dots">・・・</div><div class="fz-txt"><b>PREMIUM</b><span>プレミアム確定</span></div>';
+  Mascot.hide();try{speechSynthesis.cancel()}catch(e){}
+  document.body.appendChild(el);await sleep(2300);
+  el.classList.add('boom');sfx.premium();try{navigator.vibrate&&navigator.vibrate([120,60,200])}catch(e){}
+  setTimeout(()=>Mascot.say('プレミアムだ!!','wow',2000),500);await sleep(1700);el.classList.add('out');await sleep(260);el.remove();
+}
+/* ---------- ⑦ ラストワンの花火 ---------- */
+function fireworks(cv,ms){const dpr=Math.min(2,window.devicePixelRatio||1),W=cv.clientWidth,H=cv.clientHeight;cv.width=W*dpr;cv.height=H*dpr;const x=cv.getContext('2d');x.scale(dpr,dpr);
+  const cols=['#FFD25A','#FF5FA2','#5FD3FF','#7CF29A','#FFFFFF','#A78BFA'],ps=[];let t0=performance.now(),last=0;
+  const boom=()=>{const cx=W*(.15+Math.random()*.7),cy=H*(.12+Math.random()*.35),c=cols[Math.floor(Math.random()*cols.length)];sfx.pop(Math.floor(Math.random()*4));
+    for(let i=0;i<70;i++){const a=i/70*Math.PI*2,s=2+Math.random()*3.2;ps.push({x:cx,y:cy,vx:Math.cos(a)*s,vy:Math.sin(a)*s,l:1,c})}};
+  const step=t=>{if(t-t0>ms&&!ps.length)return;if(t-t0<ms&&t-last>420){last=t;boom()}
+    x.globalCompositeOperation='destination-out';x.fillStyle='rgba(0,0,0,.25)';x.fillRect(0,0,W,H);x.globalCompositeOperation='lighter';
+    for(let i=ps.length-1;i>=0;i--){const p=ps[i];p.x+=p.vx;p.y+=p.vy;p.vy+=.045;p.vx*=.985;p.l-=.012;if(p.l<=0){ps.splice(i,1);continue}x.globalAlpha=p.l;x.fillStyle=p.c;x.beginPath();x.arc(p.x,p.y,2.2,0,7);x.fill()}
+    x.globalAlpha=1;requestAnimationFrame(step)};requestAnimationFrame(step)}
+
+/* ---------- ⑤ 10連は1個ずつ開ける ---------- */
+function openMulti(g,results,lastOne,boxNo,bestId){
+  const best=results.findIndex(p=>p.id===bestId);const seq=results.map((p,i)=>i).filter(i=>i!==best);seq.sort(()=>Math.random()-.5);if(best>=0)seq.push(best);
+  const n=results.length;let opened=0;
+  const el=document.createElement('div');el.className='mopen';
+  el.innerHTML=`<div class="mo-head"><b class="display">${n}連</b><span class="small">カプセルをタップして開けよう！一番いいのは最後</span></div>
+    <div class="mo-grid">${Array.from({length:n},(_,i)=>`<button type="button" class="mo-cap" data-i="${i}" style="--c:${rankColor('E')};animation-delay:${i*60}ms"><span class="mo-top"></span><span class="mo-bot"></span><b></b></button>`).join('')}</div>
+    <div class="row" style="justify-content:center;gap:10px"><button type="button" class="btn ghost small" data-mo="all">まとめて開ける</button><button type="button" class="btn ghost small" data-mo="skip">スキップ</button></div>`;
+  document.body.appendChild(el);Mascot.say(`${n}連！1個ずつ開けてね`,'',1800);
+  const caps=[...el.querySelectorAll('.mo-cap')];
+  const finish=()=>{el.classList.add('out');setTimeout(()=>el.remove(),250)};
+  const revealAt=(btn)=>{if(btn.classList.contains('open'))return;const idx=seq[opened++],p=results[idx];
+    const last=opened===n;
+    if(last&&fxTier(bestId)>=2){btn.classList.add('glow');Mascot.say('さいごの1個…！','wow',1400);sfx.cut(true);
+      setTimeout(()=>{finish();playFx(g,results,lastOne,boxNo,bestId,{noCut:true})},900);return}
+    btn.style.setProperty('--c',rankColor(p.id));btn.querySelector('b').textContent=p.id;btn.classList.add('open',p.id<='B'?'big':'n');sfx.pop(Math.max(0,4-'ABCDE'.indexOf(p.id)));
+    if(p.id<='C')Mascot.say(p.id+'賞！','joy',1200);
+    if(last){setTimeout(()=>{finish();Mascot.hide();showResults(g,results,lastOne,boxNo)},900)}};
+  el.addEventListener('click',e=>{const b=e.target.closest('.mo-cap');if(b){revealAt(b);return}
+    const a=e.target.closest('[data-mo]');if(!a)return;
+    if(a.dataset.mo==='skip'){finish();Mascot.hide();if(fxTier(bestId)>=2)playFx(g,results,lastOne,boxNo,bestId,{noCut:true});else showResults(g,results,lastOne,boxNo);return}
+    const rest=caps.filter(c=>!c.classList.contains('open'));rest.slice(0,-1).forEach((c,i)=>setTimeout(()=>revealAt(c),i*110));});
+}
+
+/* ---------- ③ 全員に速報（ほかの人のA賞・ラストワン） ---------- */
+const newsQ=[];let newsOn=false;
+function bigNews(w){newsQ.push(w);pumpNews()}
+function pumpNews(){if(newsOn||!newsQ.length)return;if(Draw.on||document.querySelector('.fx,.mopen,.freeze,.stepfx')){setTimeout(pumpNews,1500);return}
+  const w=newsQ.shift(),g=G(w.gid);if(!g){pumpNews();return}const p=prizeOf(w.gid,w.pid);newsOn=true;
+  const el=document.createElement('button');el.type='button';el.className='bignews';
+  el.innerHTML=`<span class="bn-lab">速報</span><span class="bn-img">${p.img?`<img src="${p.img}" alt="">`:''}</span><span class="bn-t"><b>${esc(maskName(w.name))}さんが${w.pid==='L'?'ラストワン賞':'A賞'}を当てた!!</b><span>${esc(g.name)}・${esc(p.name)}</span></span>`;
+  el.addEventListener('click',()=>{gsel=w.gid;tab='gacha';el.remove();newsOn=false;render();window.scrollTo(0,0);pumpNews()});
+  document.body.appendChild(el);sfx.news();Mascot.say(`すごい！${maskName(w.name)}さんが当てたよ!!`,'wow',3200);
+  setTimeout(()=>{el.classList.add('out');setTimeout(()=>{el.remove();newsOn=false;pumpNews()},400)},5200)}
+
 /* ---------- 抽選演出 ---------- */
 let fx=null;
 const fxTier=id=>id==='L'||id==='A'?3:id==='B'||id==='K'?2:id==='C'?1:0;
 function cssColor(v){const m=/var\((--[\w-]+)\)/.exec(v);return m?getComputedStyle(document.documentElement).getPropertyValue(m[1]).trim()||'#E0A100':v}
-function playFx(g,results,lastOne,boxNo,bestId){
+function playFx(g,results,lastOne,boxNo,bestId,opts={}){
   const tier=fxTier(bestId),p=prizeOf(g.id,bestId),final=rankColor(bestId),n=results.length;
   // 昇格演出：B賞以上は青いカプセルで落ちてきて、揺れたあと本当の色に変わる
   const start=rankColor('E');
@@ -1414,7 +1589,7 @@ function playFx(g,results,lastOne,boxNo,bestId){
   const ORD=['E','D','C','B','A'],fi=bestId==='L'?5:bestId==='K'?3:Math.max(0,ORD.indexOf(bestId));
   const ladder=[0,1,2].map(k=>{const i=Math.min(4,Math.round(fi*k/3));return i>=fi&&k>0?null:rankColor(ORD[i])}).concat([final]);
   // カットイン：アツいほど出やすい（確定ではない）
-  const cr=Math.random(),cut=tier>=3?(cr<.7?'hot':cr<.95?'chance':''):tier===2?(cr<.45?'hot':cr<.85?'chance':''):tier===1?(cr<.1?'hot':cr<.4?'chance':''):(cr<.03?'hot':cr<.15?'chance':'');
+  const cr=opts.noCut?1:Math.random(),cut=tier>=3?(cr<.7?'hot':cr<.95?'chance':''):tier===2?(cr<.45?'hot':cr<.85?'chance':''):tier===1?(cr<.1?'hot':cr<.4?'chance':''):(cr<.03?'hot':cr<.15?'chance':'');
   const text=bestId==='L'?'var(--cap-a)':final;
   const head=bestId==='L'?'ラストワン賞！':bestId==='K'?`${results.kiri[0]}回目！キリ番賞`:tier===3?'大当たり！':tier===2?'当たり！':n>1?`${n}連の最高ランク`:'';
   const root=document.createElement('div');root.className='fx t'+tier;root.setAttribute('role','dialog');root.setAttribute('aria-label','抽選の演出');
@@ -1425,19 +1600,31 @@ function playFx(g,results,lastOne,boxNo,bestId){
       <svg class="fx-crack" viewBox="0 0 150 150" aria-hidden="true"><path class="c1" d="M75 70 L60 52 L66 40 L52 26 M75 70 L92 58 L88 44"/><path class="c2" d="M75 70 L58 84 L64 98 L48 112 M75 70 L96 86 L90 104 L104 118"/></svg></div></div>
     <div class="fx-tap"><b>タップで開ける！</b><span>あと<em>3</em>回</span></div>
     <div class="fx-label">${head?`<div class="fx-head">${head}</div>`:''}<div class="fx-prize">${p.img?`<img src="${p.img}" alt="">`:`<span class="fx-dot">${bestId==='L'?'1':bestId==='K'?'★':bestId}</span>`}<div><div class="fx-rank">${bestId==='L'?'ラストワン賞':bestId==='K'?'キリ番賞':bestId+'賞'}</div><div class="fx-name">${esc(p.name)}</div></div></div>${n>1?`<div class="fx-more">ほか ${n-1}個の結果はこのあと</div>`:''}</div>
-    <div class="fx-hint">タップで結果へ</div>`;
-  const god=tier>=2&&Math.random()<.35;
+    <div class="fx-hint">タップで結果へ</div>
+    <div class="fx-fake"><span class="fx-dot" style="--c:${rankColor('E')}">E</span><b>ざんねん…</b></div>
+    <div class="fx-rev"><b>ちょっと待った!!</b></div><canvas class="fx-fw"></canvas>`;
+  const god=opts.god||(tier>=2&&Math.random()<.35);
+  // ① 逆転：大当たりのときだけ、たまに「外れ」に見せてから本当の結果に
+  const gyaku=!opts.god&&tier>=2&&Math.random()<(tier===3?.2:.12);let gyakuDone=false;
+  if(lastOne)root.classList.add('lastone');
   if(god){root.classList.add('god');root.insertAdjacentHTML('beforeend','<div class="fx-god"><b>激アツ</b><span>当たり確定！</span></div>');setTimeout(()=>{try{sfx.promo()}catch(e){}},250)}
   document.body.appendChild(root);
   let stage='intro',taps=0;
-  const done=()=>{if(!fx||fx.root!==root)return;['t1','t2','t3','t4','t5'].forEach(k=>clearTimeout(fx[k]));cancelAnimationFrame(fx.raf);fx=null;root.classList.add('out');setTimeout(()=>root.remove(),250);showResults(g,results,lastOne,boxNo)};
-  const openNow=()=>{if(stage==='open')return;stage='open';clearTimeout(fx.t3);root.classList.remove('wait');if(final!==start){root.style.setProperty('--cc',final);root.classList.add('promo');if(tier>=2)sfx.promo()}root.classList.add('open');sfx.open(tier);try{if(tier>=2&&navigator.vibrate)navigator.vibrate(tier===3?[60,40,120]:60)}catch(e){}
-    burst(root.querySelector('.fx-cv'),tier,cssColor(final==='var(--cap-l)'?'var(--cap-a)':final));fx.t4=setTimeout(done,tier===3?4200:tier===2?3200:2200)};
+  const done=()=>{if(!fx||fx.root!==root)return;['t1','t2','t3','t4','t5','t6','t7','t8'].forEach(k=>clearTimeout(fx[k]));cancelAnimationFrame(fx.raf);fx=null;root.classList.add('out');setTimeout(()=>root.remove(),250);showResults(g,results,lastOne,boxNo)};
+  const fakeOpen=()=>{gyakuDone=true;stage='gyaku';clearTimeout(fx.t3);root.classList.remove('wait');root.style.setProperty('--cc',rankColor('E'));root.classList.add('fakeopen');sfx.open(0);Mascot.say('あ〜…ざんねん…','sad',0);
+    fx.t6=setTimeout(()=>{root.classList.add('reverse');sfx.reverse();Mascot.say('ちょっとまった!!','wow',0);try{navigator.vibrate&&navigator.vibrate([80,40,80,40,160])}catch(e){}},1500);
+    fx.t7=setTimeout(()=>{root.classList.remove('fakeopen');root.style.setProperty('--cc',final)},2500);
+    fx.t8=setTimeout(()=>{root.classList.remove('reverse');stage='wait';openNow()},3400)};
+  const openNow=()=>{if(stage==='open')return;if(gyaku&&!gyakuDone&&stage==='wait'){fakeOpen();return}stage='open';clearTimeout(fx.t3);root.classList.remove('wait');if(final!==start){root.style.setProperty('--cc',final);root.classList.add('promo');if(tier>=2)sfx.promo()}root.classList.add('open');sfx.open(tier);try{if(tier>=2&&navigator.vibrate)navigator.vibrate(tier===3?[60,40,120]:60)}catch(e){}
+    burst(root.querySelector('.fx-cv'),tier,cssColor(final==='var(--cap-l)'?'var(--cap-a)':final));
+    if(lastOne){fireworks(root.querySelector('.fx-fw'),3600);Mascot.say('ラストワンだ〜!!おめでとう!!','joy',3200)}
+    else Mascot.say(tier>=3?'やったーー!!おめでとう!!':tier===2?'いいね！当たり！':tier===1?'おっ！いいかんじ！':'つぎこそ！',tier>=2?'joy':tier===0?'sad':'',tier>=2?2600:1600);
+    fx.t4=setTimeout(done,lastOne?5200:tier===3?4200:tier===2?3200:2200)};
   fx={root,done,raf:0};
   root.addEventListener('click',e=>{
     if(e.target.closest('.fx-skip')){done();return}
     if(stage==='wait'){taps++;root.dataset.taps=taps;sfx.tap(taps);root.querySelector('.fx-tap em').textContent=Math.max(0,3-taps);
-      const nc=ladder[Math.min(3,taps)];if(nc&&taps<3&&nc!==root.style.getPropertyValue('--cc')){root.style.setProperty('--cc',nc);root.classList.remove('climb');void root.offsetWidth;root.classList.add('climb');setTimeout(()=>root.classList.remove('climb'),380);setTimeout(()=>sfx.climb(taps),60)}
+      const nc=ladder[Math.min(3,taps)];if(nc&&taps<3&&nc!==root.style.getPropertyValue('--cc')){root.style.setProperty('--cc',nc);root.classList.remove('climb');void root.offsetWidth;root.classList.add('climb');setTimeout(()=>root.classList.remove('climb'),380);setTimeout(()=>sfx.climb(taps),60);Mascot.say(taps===1?'色が変わった!?':'あがった!!','wow',1200)}
       const c=root.querySelector('.fx-cap');c.classList.remove('hit');void c.offsetWidth;c.classList.add('hit');if(taps>=3)fx.t5=setTimeout(openNow,180)}
     else if(stage==='open')done();
   });
@@ -1446,7 +1633,7 @@ function playFx(g,results,lastOne,boxNo,bestId){
   if(tier>=2)fx.t1=setTimeout(()=>{root.classList.add('tease')},1750);
   // 落ちて揺れたら、タップ待ち（6秒さわらなければ自動で開く）
   fx.t2=setTimeout(()=>{stage='wait';root.classList.add('dropped','wait');fx.t3=setTimeout(openNow,7000);
-    if(cut){const c=document.createElement('div');c.className='fx-cut '+cut;c.innerHTML=`<b>${cut==='hot'?'激アツ!!':'チャンス!'}</b>`;root.appendChild(c);root.classList.add('quake');sfx.cut(cut==='hot');
+    if(cut){const c=document.createElement('div');c.className='fx-cut '+cut;c.innerHTML=`<b>${cut==='hot'?'激アツ!!':'チャンス!'}</b>`;root.appendChild(c);root.classList.add('quake');sfx.cut(cut==='hot');Mascot.say(cut==='hot'?'きたきたきた!!':'チャンスだよ！',cut==='hot'?'wow':'',1500);
       try{if(cut==='hot'&&navigator.vibrate)navigator.vibrate([60,30,60])}catch(e){}setTimeout(()=>{root.classList.remove('quake');c.remove()},1300)}},tier>=2?2500:1800);
 }
 function burst(cv,tier,color){
@@ -2238,7 +2425,7 @@ function viewGacha(u){
       ${(()=>{const im=prizeOf(x.id,'A').img;return im?`<img class="gimg" src="${im}" alt="">`:`<span class="gimg ph" style="--c:${rankColor('A')}">A</span>`})()}<span class="gtop"><span class="gdot"></span><b>${esc(x.name)}</b></span>
       ${x.newbieHours?`<span class="lockb" style="--rc:#7CF29A">新規限定 ${newbieClock(u,x)}</span>`:''}${isJP(x)?`<span class="lockb" style="--rc:#FFD25A">JPチケット ${u.jp||0}枚</span>`:''}${x.minRank?`<span class="lockb" style="--rc:${RANKS[x.minRank].c}">${canDraw(u,x)?'':'🔒'}${RANKS[x.minRank].n}以上</span>`:''}<span class="small muted">1回 チケット${x.cost}枚${x.next&&x.next.end?'・<b style="color:var(--danger)">まもなく終了</b>':hasChange(x)?'・<b style="color:var(--warn)">'+nfLabel()+'入替</b>':''}</span>
       <span class="gbar"><i style="width:${(xt-xl)/xt*100}%"></i></span>
-      <span class="small muted num">残り ${xl.toLocaleString()}${(x.remaining.A||0)?`・<b class="aleft">A賞あと${x.remaining.A}</b>`:''}</span></button>`}).join('')}</div>
+      ${xl>0&&xl<=30?`<span class="lockb lastb">LAST ${xl}</span>`:''}<span class="small muted num">残り ${xl.toLocaleString()}${(x.remaining.A||0)?`・<b class="aleft">A賞あと${x.remaining.A}</b>`:''}</span></button>`}).join('')}</div>
     ${gheroHTML(g)}
     <div class="notice">${g.next&&g.next.end?`このガチャは <b>${endLabel()}</b> で終了します。`:hasChange(g)?`<b>${nfLabel()}</b> から景品が新しくなります。今のBOXは${endLabel()}までです。`:`毎月1日に景品を入れ替えています。次回は${nfLabel()}（あと${daysToNext()}日）。`}${(g.next&&(g.next.end||hasChange(g)))?'<br><span style="font-weight:500">期間内に引き切られなかった場合、ラストワン賞は出ません。</span>':''}</div>
     <div class="stage" style="${toneVars(g)}">
@@ -2248,6 +2435,7 @@ function viewGacha(u){
         <div class="dome">${caps.join('')}</div>
         <div class="body"><span class="slot" aria-hidden="true"><i></i></span><div class="handle" aria-hidden="true"><span class="knob"></span></div><div class="outlet"><span class="flap"></span><span class="drop"></span></div><span class="tray" aria-hidden="true"></span></div>
       </div>
+      ${l>0&&l<=30?`<div class="lastcount"><b>LAST</b><span class="num">${l}</span><small>ラストワン賞まで あと${l}個！</small></div>`:''}
       <div class="lastone">${thumb(g.id,'L',48)}<div style="flex:1;min-width:0"><b>ラストワン賞まで</b><div class="small muted">${esc(g.last.name)}</div></div><span class="cnt num">${l.toLocaleString()}</span></div>
       ${(()=>{const ev=g.kiri&&g.kiri.every;if(!ev)return '';const nx=(Math.floor(drawn/ev)+1)*ev;if(nx>=T)return '';
         return `<div class="lastone kiri">${thumb(g.id,'K',48)}<div style="flex:1;min-width:0"><b>${nx.toLocaleString()}回目のキリ番賞まで</b><div class="small muted">${esc(g.kiri.name)}・${ev}回ごとに出ます</div></div><span class="cnt num">${(nx-drawn).toLocaleString()}</span></div>`})()}
