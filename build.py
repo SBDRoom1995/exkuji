@@ -39,6 +39,17 @@ fb='''<script type="module">
 ''' % json.dumps(cfg)
 sw='''<script>
 if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})})}
+// 新しい版が出ていたら自動で切り替える（引いている最中は待つ）
+(function(){let shown=false;
+  async function check(boot){try{const t=await fetch('index.html?v='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/EX_BUILD="([^"]*)"/);if(!m||m[1]===window.EX_BUILD)return;
+    const busy=document.body.classList.contains('drawing')||document.querySelector('.fx,.stepfx,.modal:not([hidden])');
+    let last=0;try{last=+sessionStorage.getItem('exk-rl')||0}catch(e){}
+    if((boot||!busy)&&Date.now()-last>60000){try{sessionStorage.setItem('exk-rl',Date.now())}catch(e){}location.reload();return}
+    if(shown)return;shown=true;const d=document.createElement('button');d.textContent='新しい版があります（タップで更新）';d.style.cssText='position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:999;padding:12px 18px;border:0;border-radius:999px;background:#FFD25A;color:#1a1300;font-weight:800;box-shadow:0 6px 20px rgba(0,0,0,.4)';d.onclick=()=>location.reload();document.body.appendChild(d)}catch(e){}}
+  window.addEventListener('load',()=>setTimeout(()=>check(true),1500));
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')check(false)});
+  setInterval(()=>check(false),5*60*1000);
+})();
 </script>
 '''
 out=head.replace('</head>',pre+'</head>')+'\n<body>\n'+body+'\n'+fb+sw+'</body>\n</html>\n'
